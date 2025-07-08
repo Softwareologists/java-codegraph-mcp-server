@@ -1,0 +1,6 @@
+<idea-plugin>
+    <id>com.example.codegraph</id>
+    <name>CodeGraph MCP</name>
+    <version>0.1.0</version>
+    <vendor>Example</vendor>
+</idea-plugin>
