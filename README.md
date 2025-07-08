@@ -19,7 +19,7 @@ java-codegraph-mcp-server/
 ├── intellij/          # IntelliJ plugin source and resources
 ├── examples/          # Sample scripts and artifacts for smoke tests
 ├── AGENTS.md          # Guidelines for AI agents
-├── Agent Task Breakdown # Feature list for agent-driven development
+├── Task_breakdown.md  # Feature list for task-driven development
 ├── README.md          # Project overview and setup
 └── settings.gradle.kts
 ```
