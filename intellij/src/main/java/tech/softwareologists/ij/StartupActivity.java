@@ -9,6 +9,7 @@ import tech.softwareologists.core.db.EmbeddedNeo4j;
 import tech.softwareologists.core.QueryService;
 import tech.softwareologists.core.QueryServiceImpl;
 import tech.softwareologists.ij.server.HttpMcpServer;
+import tech.softwareologists.ij.settings.McpSettings;
 
 /**
  * Project-level startup activity that logs when a project is opened.
@@ -23,7 +24,8 @@ public class StartupActivity implements com.intellij.openapi.startup.StartupActi
 
         try {
             EmbeddedNeo4j db = new EmbeddedNeo4j();
-            PsiClassImportService service = new PsiClassImportService(db.getDriver());
+            McpSettings settings = McpSettings.getInstance();
+            PsiClassImportService service = new PsiClassImportService(db.getDriver(), settings.getPackageFilters());
             int count = service.importProjectClasses(project);
             LOG.info("Imported " + count + " classes from project");
             PsiManager.getInstance(project).addPsiTreeChangeListener(
@@ -32,7 +34,7 @@ public class StartupActivity implements com.intellij.openapi.startup.StartupActi
             );
 
             QueryService queryService = new QueryServiceImpl(db.getDriver());
-            HttpMcpServer server = new HttpMcpServer(0, queryService);
+            HttpMcpServer server = new HttpMcpServer(settings.getPort(), queryService);
             server.start();
             LOG.info("MCP HTTP server started on port " + server.getPort());
         } catch (Exception e) {
