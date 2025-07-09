@@ -16,7 +16,9 @@ public class EmbeddedNeo4j implements AutoCloseable {
     private final Driver driver;
 
     public EmbeddedNeo4j() {
-        this.neo4j = Neo4jBuilders.newInProcessBuilder().build();
+        this.neo4j = Neo4jBuilders.newInProcessBuilder()
+                .withDisabledServer()
+                .build();
         this.driver = GraphDatabase.driver(neo4j.boltURI(), AuthTokens.none());
         // ensure index on Class name
         try (Session session = driver.session()) {

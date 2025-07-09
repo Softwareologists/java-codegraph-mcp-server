@@ -5,10 +5,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Build CLI distribution to get runnable script
+# Build CLI fat JAR
 cd "$ROOT_DIR"
-gradle -q :cli:installDist
-CLI_BIN="$ROOT_DIR/cli/build/install/cli/bin/cli"
+gradle -q :cli:shadowJar
+CLI_JAR="$ROOT_DIR/cli/build/libs/cli-all.jar"
 
 # Prepare watch directory with sample jar
 WATCH_DIR="$(mktemp -d)"
@@ -26,7 +26,8 @@ javac -d "$SRC_DIR" "$SRC_DIR/dep/A.java" "$SRC_DIR/dep/B.java"
 jar cf "$WATCH_DIR/callers.jar" -C "$SRC_DIR" dep/A.class -C "$SRC_DIR" dep/B.class
 
 # Run CLI with the generated jar and send a sample query
-"$CLI_BIN" --watch-dir "$WATCH_DIR" --stdio <<EOF_QUERY
+JAVA_OPTS="-Dserver.config.strict_validation.enabled=false"
+java $JAVA_OPTS -jar "$CLI_JAR" --watch-dir "$WATCH_DIR" --stdio <<EOF_QUERY
 {"findCallers":"dep.A"}
 EOF_QUERY
 

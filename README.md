@@ -52,15 +52,23 @@ java-codegraph-mcp-server/
    ```bash
    ./gradlew :cli:shadowJar
    ```
-2. **Run the watcher**
+2. **Check the built jar**
+
+   ```bash
+   java -jar cli/build/libs/cli-all.jar --help
+   ```
+3. **Run the watcher**
 
    ```bash
    java -jar cli/build/libs/cli-all.jar --watch-dir /path/to/jars --stdio
    ```
-3. **Send MCP Requests**
+4. **Send MCP Requests**
 
    * At startup, the manifest JSON is printed.
    * Send JSON queries on stdin; responses appear on stdout.
+
+For a full demonstration, run `examples/sample-cli.sh` which assembles the jar,
+imports a sample JAR, and executes a query.
 
 ## IntelliJ Plugin
 
