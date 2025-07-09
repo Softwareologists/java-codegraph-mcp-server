@@ -3,6 +3,6 @@ plugins {
 }
 
 application {
-    mainClass.set("com.example.cli.Main")
+    mainClass.set("tech.softwareologists.cli.Main")
 }
 
