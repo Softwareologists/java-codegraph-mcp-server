@@ -15,10 +15,13 @@ subprojects {
         testImplementation("junit:junit:4.13.2")
     }
 
-    tasks.withType<JavaCompile> {
-        // Neo4j driver 5.x is compiled for Java 17
-        sourceCompatibility = "17"
-        targetCompatibility = "17"
+    java {
+        // Compile with JDK 21 but target Java 17 bytecode
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(21))
+        }
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     spotless {
