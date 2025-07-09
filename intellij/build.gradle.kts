@@ -6,6 +6,7 @@ intellij {
     pluginName.set("CodeGraphMcp")
     version.set("2021.3")
     type.set("IC")
+    plugins.set(listOf("java"))
 }
 
 java {
