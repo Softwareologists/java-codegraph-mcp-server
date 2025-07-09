@@ -18,6 +18,12 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 
 import org.junit.Test;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Record;
+
+import com.example.core.db.EmbeddedNeo4j;
+import com.example.core.db.NodeLabel;
 
 public class JarImporterTest {
     @Test
@@ -26,7 +32,9 @@ public class JarImporterTest {
         try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(jar))) {
             // create empty jar
         }
-        JarImporter.importJar(jar);
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            JarImporter.importJar(jar, db.getDriver());
+        }
     }
 
     @Test
@@ -60,13 +68,53 @@ public class JarImporterTest {
         logger.addHandler(handler);
         logger.setLevel(Level.INFO);
 
-        JarImporter.importJar(jar);
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            JarImporter.importJar(jar, db.getDriver());
+        }
 
         handler.flush();
         logger.removeHandler(handler);
         String logs = out.toString(StandardCharsets.UTF_8.name());
         if (!logs.contains("foo.Bar")) {
             throw new AssertionError("Expected class name not found in logs: " + logs);
+        }
+    }
+
+    @Test
+    public void importJar_sampleJar_persistsNodes() throws Exception {
+        Path srcDir = Files.createTempDirectory("src2");
+        Path pkgDir = srcDir.resolve("baz");
+        Files.createDirectories(pkgDir);
+        Path srcFile = pkgDir.resolve("Qux.java");
+        Files.write(srcFile, "package baz; public class Qux {}".getBytes(StandardCharsets.UTF_8));
+
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) {
+            throw new IllegalStateException("Java compiler not available");
+        }
+        int result = compiler.run(null, null, null, srcFile.toString());
+        if (result != 0) {
+            throw new IllegalStateException("Compilation failed");
+        }
+
+        File jar = File.createTempFile("qux", ".jar");
+        try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(jar))) {
+            JarEntry entry = new JarEntry("baz/Qux.class");
+            jos.putNextEntry(entry);
+            Files.copy(pkgDir.resolve("Qux.class"), jos);
+            jos.closeEntry();
+        }
+
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            Driver driver = db.getDriver();
+            JarImporter.importJar(jar, driver);
+
+            try (Session session = driver.session()) {
+                java.util.List<Record> res = session.run("MATCH (c:" + NodeLabel.CLASS + " {name:'baz.Qux'}) RETURN c").list();
+                if (res.isEmpty()) {
+                    throw new AssertionError("Node baz.Qux not persisted");
+                }
+            }
         }
     }
 }
