@@ -67,8 +67,10 @@ java-codegraph-mcp-server/
    * At startup, the manifest JSON is printed.
    * Send JSON queries on stdin; responses appear on stdout.
 
-For a full demonstration, run `examples/sample-cli.sh` which assembles the jar,
-imports a sample JAR, and executes a query.
+For a full demonstration:
+
+1. Run `examples/build-example-jar.sh` to create `examples/example.jar`.
+2. Execute `examples/sample-cli.sh` which builds the CLI, imports that JAR, and runs a sample query.
 
 ## IntelliJ Plugin
 
@@ -82,6 +84,8 @@ imports a sample JAR, and executes a query.
 3. **Use**
 
    * On project open, the plugin scans classes and exposes `/mcp/manifest` and `/mcp/query`.
+
+For detailed setup steps see [examples/idea-launch.md](examples/idea-launch.md).
 
 ## Configuring OpenHands
 
