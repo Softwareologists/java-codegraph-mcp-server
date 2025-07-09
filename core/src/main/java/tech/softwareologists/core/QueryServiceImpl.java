@@ -26,4 +26,23 @@ public class QueryServiceImpl implements QueryService {
                     .list(r -> r.get("name").asString());
         }
     }
+
+    @Override
+    public List<String> findImplementations(String interfaceName) {
+        try (Session session = driver.session()) {
+            return session.run(
+                            "MATCH (c:" + NodeLabel.CLASS + ")-[:IMPLEMENTS]->(i:" + NodeLabel.CLASS + " {name:$name}) RETURN c.name AS name",
+                            Values.parameters("name", interfaceName))
+                    .list(r -> r.get("name").asString());
+        }
+    }
+
+    @Override
+    public List<String> findSubclasses(String className, int depth) {
+        try (Session session = driver.session()) {
+            String query = "MATCH (sub:" + NodeLabel.CLASS + ")-[:EXTENDS*1.." + depth + "]->(sup:" + NodeLabel.CLASS + " {name:$name}) RETURN DISTINCT sub.name AS name";
+            return session.run(query, Values.parameters("name", className))
+                    .list(r -> r.get("name").asString());
+        }
+    }
 }

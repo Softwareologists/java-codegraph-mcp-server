@@ -15,7 +15,22 @@ import java.util.Collections;
 public class HttpMcpServerTest {
     @Test
     public void manifestAndQuery_returnJson() throws Exception {
-        QueryService qs = cls -> Collections.singletonList("Caller");
+        QueryService qs = new QueryService() {
+            @Override
+            public java.util.List<String> findCallers(String className) {
+                return java.util.Collections.singletonList("Caller");
+            }
+
+            @Override
+            public java.util.List<String> findImplementations(String interfaceName) {
+                return java.util.Collections.emptyList();
+            }
+
+            @Override
+            public java.util.List<String> findSubclasses(String className, int depth) {
+                return java.util.Collections.emptyList();
+            }
+        };
         HttpMcpServer server = new HttpMcpServer(0, qs);
         server.start();
         int port = server.getPort();

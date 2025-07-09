@@ -59,6 +59,33 @@ public class JarImporter {
                                     "MATCH (s:" + NodeLabel.CLASS + " {name:$src}), (t:" + NodeLabel.CLASS + " {name:$tgt}) MERGE (s)-[:DEPENDS_ON]->(t)",
                                     Values.parameters("src", cls, "tgt", depName));
                         }
+
+                        // record implemented interfaces
+                        java.util.Set<String> seenInterfaces = new java.util.HashSet<>();
+                        for (ClassInfo iface : classInfo.getInterfaces()) {
+                            String ifaceName = iface.getName();
+                            if (!seenInterfaces.add(ifaceName)) {
+                                continue;
+                            }
+                            session.run(
+                                    "MERGE (i:" + NodeLabel.CLASS + " {name:$iface})",
+                                    Values.parameters("iface", ifaceName));
+                            session.run(
+                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}), (i:" + NodeLabel.CLASS + " {name:$iface}) MERGE (c)-[:IMPLEMENTS]->(i)",
+                                    Values.parameters("cls", cls, "iface", ifaceName));
+                        }
+
+                        // record superclass relationship
+                        ClassInfo superInfo = classInfo.getSuperclass();
+                        if (superInfo != null) {
+                            String superName = superInfo.getName();
+                            session.run(
+                                    "MERGE (s:" + NodeLabel.CLASS + " {name:$sup})",
+                                    Values.parameters("sup", superName));
+                            session.run(
+                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}), (s:" + NodeLabel.CLASS + " {name:$sup}) MERGE (c)-[:EXTENDS]->(s)",
+                                    Values.parameters("cls", cls, "sup", superName));
+                        }
                     }
                 }
             }

@@ -16,7 +16,22 @@ public class StdioMcpServerTest {
         ByteArrayInputStream in = new ByteArrayInputStream(request.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        QueryService qs = className -> java.util.Collections.emptyList();
+        QueryService qs = new QueryService() {
+            @Override
+            public java.util.List<String> findCallers(String className) {
+                return java.util.Collections.emptyList();
+            }
+
+            @Override
+            public java.util.List<String> findImplementations(String interfaceName) {
+                return java.util.Collections.emptyList();
+            }
+
+            @Override
+            public java.util.List<String> findSubclasses(String className, int depth) {
+                return java.util.Collections.emptyList();
+            }
+        };
         new StdioMcpServer(qs, in, new PrintStream(out)).run();
 
         String output = out.toString(StandardCharsets.UTF_8);
