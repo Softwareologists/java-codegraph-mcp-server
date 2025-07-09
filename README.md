@@ -1,6 +1,7 @@
 # CodeGraph MCP Server for Java applications(java-codegraph-mcp-server)
 
-[![Build Status](https://github.com/<your-org>/java-codegraph-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-org>/java-codegraph-mcp-server/actions/workflows/ci.yml)
+[![CI](https://github.com/Softwareologists/java-codegraph-mcp-server/actions/workflows/pr-tests.yml/badge.svg)](https://github.com/Softwareologists/java-codegraph-mcp-server/actions/workflows/pr-tests.yml)
+[![Build](https://github.com/Softwareologists/java-codegraph-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/Softwareologists/java-codegraph-mcp-server/actions/workflows/ci.yml)
 
 A Java-based multi-module project that uses ClassGraph to scan JARs (and IntelliJ PSI), persists the resulting class-dependency graph in an embedded Neo4j database, and exposes it over the MCP protocol via both a CLI folder-watcher and an IntelliJ plugin.
 
@@ -46,10 +47,6 @@ java-codegraph-mcp-server/
    ```bash
    ./gradlew :core:test
    ```
-## Continuous Integration
-
-The project is built and tested on every push using [GitHub Actions](https://github.com/<your-org>/java-codegraph-mcp-server/actions). The pipeline executes `./gradlew build` and `:intellij:buildPlugin` in a headless environment.
-
 
 ## CLI Usage
 
