@@ -37,7 +37,10 @@ public class ProjectDirImporterTest {
 
         try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
             Driver driver = db.getDriver();
-            ProjectDirImporter.importDir(outDir.toFile(), driver);
+            int count = ProjectDirImporter.importDirectory(outDir.toFile(), driver);
+            if (count != 1) {
+                throw new AssertionError("Expected 1 class but was: " + count);
+            }
 
             try (Session session = driver.session()) {
                 List<Record> result = session.run("MATCH (c:" + NodeLabel.CLASS + " {name:'foo.Bar'}) RETURN c").list();

@@ -4,6 +4,9 @@ import tech.softwareologists.core.JarImporter;
 import tech.softwareologists.core.QueryService;
 import tech.softwareologists.core.QueryServiceImpl;
 import tech.softwareologists.core.db.EmbeddedNeo4j;
+import tech.softwareologists.cli.ProjectDirImporter;
+
+import java.util.logging.Logger;
 
 import java.io.PrintStream;
 import java.nio.file.Paths;
@@ -13,7 +16,8 @@ import java.nio.file.Paths;
  */
 public class CliMain {
     /** Usage string shown when arguments are missing or --help is supplied. */
-    public static final String USAGE = "Usage: cli --watch-dir <dir> [--stdio]";
+    public static final String USAGE = "Usage: cli --watch-dir <dir> [--stdio] [--project-dir <dir>]";
+    private static final Logger LOGGER = Logger.getLogger(CliMain.class.getName());
 
     public static void main(String[] args) {
         int code = run(args, System.out);
@@ -31,6 +35,7 @@ public class CliMain {
      */
     static int run(String[] args, PrintStream out) {
         String watchDir = null;
+        String projectDir = null;
         boolean stdio = false;
         boolean help = false;
 
@@ -51,6 +56,13 @@ public class CliMain {
                 case "--stdio":
                     stdio = true;
                     break;
+                case "--project-dir":
+                    if (i + 1 >= args.length) {
+                        out.println(USAGE);
+                        return 1;
+                    }
+                    projectDir = args[++i];
+                    break;
                 default:
                     out.println("Unknown option: " + arg);
                     out.println(USAGE);
@@ -68,6 +80,11 @@ public class CliMain {
             java.nio.file.Files.list(Paths.get(watchDir))
                     .filter(p -> p.toString().endsWith(".jar"))
                     .forEach(p -> JarImporter.importJar(p.toFile(), db.getDriver()));
+
+            if (projectDir != null) {
+                int imported = ProjectDirImporter.importDirectory(Paths.get(projectDir).toFile(), db.getDriver());
+                LOGGER.info("Imported " + imported + " classes from project directory");
+            }
 
             watcher.start();
 
