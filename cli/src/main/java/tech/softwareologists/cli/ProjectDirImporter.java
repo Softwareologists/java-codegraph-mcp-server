@@ -24,12 +24,14 @@ public class ProjectDirImporter {
     }
 
     /**
-     * Import the compiled classes in the given directory into the graph.
+     * Import the compiled classes in the given directory into the graph and
+     * return the number of classes discovered.
      *
      * @param dir    directory containing compiled .class files
      * @param driver Neo4j driver used for persistence
+     * @return number of classes imported
      */
-    public static void importDir(File dir, Driver driver) {
+    public static int importDirectory(File dir, Driver driver) {
         try {
             LOGGER.info("Importing directory: " + dir.getAbsolutePath());
 
@@ -62,10 +64,19 @@ public class ProjectDirImporter {
                         }
                     }
                 }
+                LOGGER.info("Imported " + classes.size() + " classes");
+                return classes.size();
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to import directory", e);
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Backwards compatible wrapper for {@link #importDirectory(File, Driver)}.
+     */
+    public static void importDir(File dir, Driver driver) {
+        importDirectory(dir, driver);
     }
 }
