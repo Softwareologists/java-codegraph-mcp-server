@@ -20,3 +20,4 @@ gradle/wrapper/
 # Local Gradle wrappers
 gradlew
 gradlew.bat
+examples/example.jar
