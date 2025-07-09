@@ -1,9 +1,3 @@
-<!-- markdownlint-disable MD025 MD041 MD003 MD022 -->
----
-layout: default
-title: CodeGraph MCP Server
----
-
 # CodeGraph MCP Server
 
 A multi-module project that indexes Java class dependencies and exposes them
