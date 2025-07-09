@@ -1,9 +1,16 @@
 plugins {
     application
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 application {
-    mainClass.set("tech.softwareologists.cli.Main")
+    mainClass.set("tech.softwareologists.cli.CliMain")
+}
+
+tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+    archiveFileName.set("cli-all.jar")
+    manifest.attributes(mapOf("Main-Class" to "tech.softwareologists.cli.CliMain"))
+    isZip64 = true
 }
 
 dependencies {
