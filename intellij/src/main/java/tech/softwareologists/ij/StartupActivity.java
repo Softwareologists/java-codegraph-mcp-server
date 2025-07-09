@@ -6,6 +6,9 @@ import com.intellij.openapi.project.DumbAware;
 import com.intellij.psi.PsiManager;
 import com.intellij.openapi.Disposable;
 import tech.softwareologists.core.db.EmbeddedNeo4j;
+import tech.softwareologists.core.QueryService;
+import tech.softwareologists.core.QueryServiceImpl;
+import tech.softwareologists.ij.server.HttpMcpServer;
 
 /**
  * Project-level startup activity that logs when a project is opened.
@@ -27,6 +30,11 @@ public class StartupActivity implements com.intellij.openapi.startup.StartupActi
                     new PsiClassChangeListener(project, service),
                     (Disposable) project
             );
+
+            QueryService queryService = new QueryServiceImpl(db.getDriver());
+            HttpMcpServer server = new HttpMcpServer(0, queryService);
+            server.start();
+            LOG.info("MCP HTTP server started on port " + server.getPort());
         } catch (Exception e) {
             LOG.warn("Failed to import project classes", e);
         }
