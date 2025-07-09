@@ -2,6 +2,7 @@ package tech.softwareologists.cli;
 
 import org.junit.Test;
 import tech.softwareologists.core.ManifestGenerator;
+import tech.softwareologists.core.QueryService;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -15,7 +16,8 @@ public class StdioMcpServerTest {
         ByteArrayInputStream in = new ByteArrayInputStream(request.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        new StdioMcpServer(in, new PrintStream(out)).run();
+        QueryService qs = className -> java.util.Collections.emptyList();
+        new StdioMcpServer(qs, in, new PrintStream(out)).run();
 
         String output = out.toString(StandardCharsets.UTF_8);
         String manifest = ManifestGenerator.generate();

@@ -1,7 +1,4 @@
 #!/bin/bash
-# Example script to run CLI and process a sample jar
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-JAR="../cli/samples/example.jar"
-
-java -cp "$JAR" HelloWorld
+# Example script placeholder. Build your own sample JAR and adjust the path
+# below to try out the CLI.
+echo "No bundled sample JAR. Build one and run the CLI manually."
