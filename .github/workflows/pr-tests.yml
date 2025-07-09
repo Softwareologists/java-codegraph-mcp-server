@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  modules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            core:
+              - 'core/**'
+            cli:
+              - 'cli/**'
+            intellij:
+              - 'intellij/**'
+      - name: Spotless Check
+        run: gradle spotlessCheck
+      - name: Core Tests
+        if: steps.changes.outputs.core == 'true'
+        run: gradle :core:test
+      - name: CLI Tests
+        if: steps.changes.outputs.cli == 'true'
+        run: gradle :cli:test
+      - name: IntelliJ Plugin Build
+        if: steps.changes.outputs.intellij == 'true'
+        run: gradle :intellij:buildPlugin
