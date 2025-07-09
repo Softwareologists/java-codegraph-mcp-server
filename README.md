@@ -78,7 +78,7 @@ imports a sample JAR, and executes a query.
    * Select `intellij/build/distributions/intellij-*.zip`.
 2. **Configure**
 
-   * Open *Settings > Tools > CodeGraph MCP* and set the HTTP port.
+   * Open *Settings > Tools > CodeGraph MCP* and set the HTTP port and optional package filters.
 3. **Use**
 
    * On project open, the plugin scans classes and exposes `/mcp/manifest` and `/mcp/query`.
