@@ -1,6 +1,12 @@
 package tech.softwareologists.cli;
 
+import tech.softwareologists.core.JarImporter;
+import tech.softwareologists.core.QueryService;
+import tech.softwareologists.core.QueryServiceImpl;
+import tech.softwareologists.core.db.EmbeddedNeo4j;
+
 import java.io.PrintStream;
+import java.nio.file.Paths;
 
 /**
  * Simple command line entry point for the MCP CLI.
@@ -57,8 +63,22 @@ public class CliMain {
             return help ? 0 : 1;
         }
 
-        // Placeholder for actual functionality
-        out.println("Starting with watchDir=" + watchDir + " stdio=" + stdio);
-        return 0;
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j();
+             JarWatcher watcher = new JarWatcher(Paths.get(watchDir), p -> JarImporter.importJar(p.toFile(), db.getDriver()))) {
+            java.nio.file.Files.list(Paths.get(watchDir))
+                    .filter(p -> p.toString().endsWith(".jar"))
+                    .forEach(p -> JarImporter.importJar(p.toFile(), db.getDriver()));
+
+            watcher.start();
+
+            QueryService service = new QueryServiceImpl(db.getDriver());
+            if (stdio) {
+                new StdioMcpServer(service, System.in, out).run();
+            }
+            return 0;
+        } catch (Exception e) {
+            e.printStackTrace(out);
+            return 1;
+        }
     }
 }

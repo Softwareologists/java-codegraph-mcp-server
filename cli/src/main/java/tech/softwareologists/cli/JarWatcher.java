@@ -8,11 +8,14 @@ import java.util.logging.Logger;
 /**
  * Watches a directory for newly created JAR files and logs their paths.
  */
+import java.util.function.Consumer;
+
 public class JarWatcher implements AutoCloseable {
     private static final Logger LOGGER = Logger.getLogger(JarWatcher.class.getName());
 
     private final Path directory;
     private final WatchService watchService;
+    private final Consumer<Path> onJar;
     private Thread thread;
 
     /**
@@ -20,7 +23,12 @@ public class JarWatcher implements AutoCloseable {
      * until {@link #start()} is called.
      */
     public JarWatcher(Path directory) throws IOException {
+        this(directory, p -> {});
+    }
+
+    public JarWatcher(Path directory, Consumer<Path> onJar) throws IOException {
         this.directory = directory;
+        this.onJar = onJar;
         this.watchService = directory.getFileSystem().newWatchService();
         directory.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
     }
@@ -43,7 +51,9 @@ public class JarWatcher implements AutoCloseable {
                     if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                         Path created = directory.resolve((Path) event.context());
                         if (created.toString().endsWith(".jar")) {
-                            LOGGER.info("Detected JAR: " + created.toAbsolutePath());
+                            Path abs = created.toAbsolutePath();
+                            LOGGER.info("Detected JAR: " + abs);
+                            onJar.accept(abs);
                         }
                     }
                 }
