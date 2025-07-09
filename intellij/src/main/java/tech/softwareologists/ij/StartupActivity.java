@@ -3,6 +3,8 @@ package tech.softwareologists.ij;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.DumbAware;
+import com.intellij.psi.PsiManager;
+import com.intellij.openapi.Disposable;
 import tech.softwareologists.core.db.EmbeddedNeo4j;
 
 /**
@@ -16,10 +18,15 @@ public class StartupActivity implements com.intellij.openapi.startup.StartupActi
     public void runActivity(Project project) {
         LOG.info("CodeGraph MCP plugin initialized for project: " + project.getName());
 
-        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+        try {
+            EmbeddedNeo4j db = new EmbeddedNeo4j();
             PsiClassImportService service = new PsiClassImportService(db.getDriver());
             int count = service.importProjectClasses(project);
             LOG.info("Imported " + count + " classes from project");
+            PsiManager.getInstance(project).addPsiTreeChangeListener(
+                    new PsiClassChangeListener(project, service),
+                    (Disposable) project
+            );
         } catch (Exception e) {
             LOG.warn("Failed to import project classes", e);
         }

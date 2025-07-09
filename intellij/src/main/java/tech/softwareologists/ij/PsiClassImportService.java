@@ -55,4 +55,42 @@ public class PsiClassImportService {
         }
         return count;
     }
+
+    /**
+     * Import a single {@link PsiClass} into the graph.
+     *
+     * @param cls class to import
+     */
+    public void importPsiClass(PsiClass cls) {
+        String qname = cls.getQualifiedName();
+        if (qname == null) {
+            return;
+        }
+        try (Session session = driver.session()) {
+            session.run("MERGE (c:" + NodeLabel.CLASS + " {name:$name})",
+                    Values.parameters("name", qname));
+
+            java.util.Set<String> seen = new java.util.HashSet<>();
+            for (com.intellij.psi.PsiClassType t : cls.getExtendsListTypes()) {
+                addEdge(qname, t, session, seen);
+            }
+            for (com.intellij.psi.PsiClassType t : cls.getImplementsListTypes()) {
+                addEdge(qname, t, session, seen);
+            }
+        }
+    }
+
+    private void addEdge(String src, com.intellij.psi.PsiClassType type,
+                          Session session, java.util.Set<String> seen) {
+        com.intellij.psi.PsiClass resolved = type.resolve();
+        String depName = resolved != null ? resolved.getQualifiedName() : type.getCanonicalText();
+        if (depName == null || src.equals(depName) || !seen.add(depName)) {
+            return;
+        }
+        session.run("MERGE (d:" + NodeLabel.CLASS + " {name:$dep})",
+                Values.parameters("dep", depName));
+        session.run("MATCH (s:" + NodeLabel.CLASS + " {name:$src}), (t:" + NodeLabel.CLASS +
+                        " {name:$tgt}) MERGE (s)-[:DEPENDS_ON]->(t)",
+                Values.parameters("src", src, "tgt", depName));
+    }
 }
