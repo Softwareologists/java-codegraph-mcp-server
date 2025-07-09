@@ -117,4 +117,52 @@ public class JarImporterTest {
             }
         }
     }
+
+    @Test
+    public void importJar_dependency_createsEdge() throws Exception {
+        Path srcDir = Files.createTempDirectory("srcdep");
+        Path pkgDir = srcDir.resolve("dep");
+        Files.createDirectories(pkgDir);
+
+        Path aFile = pkgDir.resolve("A.java");
+        Files.write(aFile, "package dep; public class A {}".getBytes(StandardCharsets.UTF_8));
+
+        Path bFile = pkgDir.resolve("B.java");
+        Files.write(bFile, "package dep; public class B { A a; }".getBytes(StandardCharsets.UTF_8));
+
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) {
+            throw new IllegalStateException("Java compiler not available");
+        }
+        int res = compiler.run(null, null, null, aFile.toString(), bFile.toString());
+        if (res != 0) {
+            throw new IllegalStateException("Compilation failed");
+        }
+
+        File jar = File.createTempFile("dep", ".jar");
+        try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(jar))) {
+            JarEntry entryA = new JarEntry("dep/A.class");
+            jos.putNextEntry(entryA);
+            Files.copy(pkgDir.resolve("A.class"), jos);
+            jos.closeEntry();
+            JarEntry entryB = new JarEntry("dep/B.class");
+            jos.putNextEntry(entryB);
+            Files.copy(pkgDir.resolve("B.class"), jos);
+            jos.closeEntry();
+        }
+
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            Driver driver = db.getDriver();
+            JarImporter.importJar(jar, driver);
+
+            try (Session session = driver.session()) {
+                java.util.List<Record> rel = session.run(
+                                "MATCH (s:" + NodeLabel.CLASS + " {name:'dep.B'})-[:DEPENDS_ON]->(t:" + NodeLabel.CLASS + " {name:'dep.A'}) RETURN t")
+                        .list();
+                if (rel.isEmpty()) {
+                    throw new AssertionError("Dependency edge not created");
+                }
+            }
+        }
+    }
 }
