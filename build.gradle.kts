@@ -16,8 +16,9 @@ subprojects {
     }
 
     tasks.withType<JavaCompile> {
-        sourceCompatibility = "11"
-        targetCompatibility = "11"
+        // Neo4j driver 5.x is compiled for Java 17
+        sourceCompatibility = "17"
+        targetCompatibility = "17"
     }
 
     spotless {
