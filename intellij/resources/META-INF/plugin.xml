@@ -2,5 +2,11 @@
     <id>tech.softwareologists.codegraph</id>
     <name>CodeGraph MCP</name>
     <version>0.1.0</version>
-    <vendor>Example</vendor>
+    <vendor email="support@softwareologists.tech" url="https://softwareologists.tech">Softwareologists</vendor>
+    <description>Integrates the CodeGraph MCP server with IntelliJ IDEA.</description>
+    <idea-version since-build="213"/>
+    <depends>com.intellij.modules.platform</depends>
+    <extensions defaultExtensionNs="com.intellij">
+        <postStartupActivity implementation="tech.softwareologists.ij.StartupActivity"/>
+    </extensions>
 </idea-plugin>
