@@ -346,4 +346,62 @@ public class QueryServiceImplTest {
             }
         }
     }
+
+    @Test
+    public void findControllersUsingService_constructorInjection_returnsController() throws Exception {
+        java.nio.file.Path src = java.nio.file.Files.createTempDirectory("ctrlsrc");
+        java.nio.file.Path pkg = src.resolve("inj");
+        java.nio.file.Files.createDirectories(pkg);
+
+        java.nio.file.Path ctrlAnno = pkg.resolveSibling("org/springframework/stereotype/Controller.java");
+        java.nio.file.Files.createDirectories(ctrlAnno.getParent());
+        java.nio.file.Files.write(ctrlAnno,
+                ("package org.springframework.stereotype;" +
+                        "@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)" +
+                        "@java.lang.annotation.Target(java.lang.annotation.ElementType.TYPE)" +
+                        "public @interface Controller {}").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        java.nio.file.Path service = pkg.resolve("MyService.java");
+        java.nio.file.Files.write(service, "package inj; public class MyService {}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        java.nio.file.Path controller = pkg.resolve("MyController.java");
+        java.nio.file.Files.write(controller,
+                ("package inj;" +
+                        "import org.springframework.stereotype.Controller;" +
+                        "@Controller public class MyController {" +
+                        "  private final MyService svc;" +
+                        "  public MyController(MyService svc) { this.svc = svc; }" +
+                        "}").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) throw new IllegalStateException("Java compiler not available");
+        int res = compiler.run(null, null, null, ctrlAnno.toString(), service.toString(), controller.toString());
+        if (res != 0) throw new IllegalStateException("Compilation failed");
+
+        java.io.File jar = java.io.File.createTempFile("ctrl", ".jar");
+        try (java.util.jar.JarOutputStream jos = new java.util.jar.JarOutputStream(new java.io.FileOutputStream(jar))) {
+            for (String n : new String[]{
+                    "org/springframework/stereotype/Controller.class",
+                    "inj/MyService.class",
+                    "inj/MyController.class"}) {
+                jos.putNextEntry(new java.util.jar.JarEntry(n));
+                java.nio.file.Path p = n.contains("Controller.class") && !n.startsWith("inj/")
+                        ? ctrlAnno.getParent().resolve("Controller.class")
+                        : pkg.resolve(n.substring(n.lastIndexOf('/') + 1));
+                java.nio.file.Files.copy(p, jos);
+                jos.closeEntry();
+            }
+        }
+
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            org.neo4j.driver.Driver driver = db.getDriver();
+            JarImporter.importJar(jar, driver);
+
+            QueryService serviceApi = new QueryServiceImpl(driver);
+            java.util.List<String> ctrls = serviceApi.findControllersUsingService("inj.MyService");
+            if (ctrls.size() != 1 || !ctrls.get(0).equals("inj.MyController")) {
+                throw new AssertionError("Unexpected controllers: " + ctrls);
+            }
+        }
+    }
 }

@@ -7,6 +7,8 @@ import io.github.classgraph.ScanResult;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.Opcodes;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
@@ -83,12 +85,43 @@ public class JarImporter {
                         Map<String, java.util.List<String>> methodAnnos = new HashMap<>();
                         Map<String, String> methodRoutes = new HashMap<>();
                         Map<String, String> methodVerbs = new HashMap<>();
+                        Set<String> usesDeps = new HashSet<>();
                         try (java.io.InputStream in = classInfo.getResource().open()) {
                             ClassReader cr = new ClassReader(in);
                             cr.accept(new ClassVisitor(Opcodes.ASM9) {
                                 @Override
+                                public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+                                    return new FieldVisitor(Opcodes.ASM9) {
+                                        boolean autowired = false;
+
+                                        @Override
+                                        public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+                                            String ann = Type.getType(desc).getClassName();
+                                            if ("org.springframework.beans.factory.annotation.Autowired".equals(ann)) {
+                                                autowired = true;
+                                            }
+                                            return super.visitAnnotation(desc, visible);
+                                        }
+
+                                        @Override
+                                        public void visitEnd() {
+                                            if (autowired) {
+                                                String type = Type.getType(descriptor).getClassName();
+                                                usesDeps.add(type);
+                                            }
+                                            super.visitEnd();
+                                        }
+                                    };
+                                }
+
+                                @Override
                                 public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
                                     String sig = name + descriptor;
+                                    if ("<init>".equals(name)) {
+                                        for (Type t : Type.getArgumentTypes(descriptor)) {
+                                            usesDeps.add(t.getClassName());
+                                        }
+                                    }
                                     methodNames.add(sig);
                                     session.run(
                                             "MERGE (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig})",
@@ -230,6 +263,15 @@ public class JarImporter {
                             session.run(
                                     "MATCH (s:" + NodeLabel.CLASS + " {name:$src}), (t:" + NodeLabel.CLASS + " {name:$tgt}) MERGE (s)-[:DEPENDS_ON]->(t)",
                                     Values.parameters("src", cls, "tgt", depName));
+                        }
+
+                        for (String use : usesDeps) {
+                            session.run(
+                                    "MERGE (u:" + NodeLabel.CLASS + " {name:$dep})",
+                                    Values.parameters("dep", use));
+                            session.run(
+                                    "MATCH (s:" + NodeLabel.CLASS + " {name:$src}), (t:" + NodeLabel.CLASS + " {name:$tgt}) MERGE (s)-[:USES]->(t)",
+                                    Values.parameters("src", cls, "tgt", use));
                         }
 
                         // record implemented interfaces
