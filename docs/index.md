@@ -3,6 +3,8 @@
 A multi-module project that indexes Java class dependencies and exposes them
 via the MCP protocol.
 
+{% include milestones.html %}
+
 ## Modules
 
 ### Core
