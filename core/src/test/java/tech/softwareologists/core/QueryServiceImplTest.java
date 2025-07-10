@@ -186,4 +186,50 @@ public class QueryServiceImplTest {
             }
         }
     }
+
+    @Test
+    public void findMethodsCallingMethod_afterImport_returnsCallers() throws Exception {
+        java.nio.file.Path src = java.nio.file.Files.createTempDirectory("callersrc");
+        java.nio.file.Path pkg = src.resolve("invoke");
+        java.nio.file.Files.createDirectories(pkg);
+        java.nio.file.Path callee = pkg.resolve("Callee.java");
+        java.nio.file.Files.write(callee, "package invoke; public class Callee { public void methodB() {} }".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        java.nio.file.Path callerA = pkg.resolve("Caller.java");
+        java.nio.file.Files.write(callerA, "package invoke; public class Caller { public void methodA() { new Callee().methodB(); } }".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        java.nio.file.Path callerB = pkg.resolve("Caller2.java");
+        java.nio.file.Files.write(callerB, "package invoke; public class Caller2 { public void methodC() { new Callee().methodB(); } }".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) throw new IllegalStateException("Java compiler not available");
+        int res = compiler.run(null, null, null, callee.toString(), callerA.toString(), callerB.toString());
+        if (res != 0) throw new IllegalStateException("Compilation failed");
+
+        java.io.File jar = java.io.File.createTempFile("invoke", ".jar");
+        try (java.util.jar.JarOutputStream jos = new java.util.jar.JarOutputStream(new java.io.FileOutputStream(jar))) {
+            for (String n : new String[]{"invoke/Callee.class", "invoke/Caller.class", "invoke/Caller2.class"}) {
+                jos.putNextEntry(new java.util.jar.JarEntry(n));
+                java.nio.file.Files.copy(pkg.resolve(n.substring(n.lastIndexOf('/') + 1)), jos);
+                jos.closeEntry();
+            }
+        }
+
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            Driver driver = db.getDriver();
+            JarImporter.importJar(jar, driver);
+
+            QueryService service = new QueryServiceImpl(driver);
+            java.util.List<String> all = service.findMethodsCallingMethod("invoke.Callee", "methodB()V", null);
+            java.util.Set<String> expected = new java.util.HashSet<>();
+            expected.add("methodA()V");
+            expected.add("methodC()V");
+            if (!all.containsAll(expected) || all.size() != 2) {
+                throw new AssertionError("Unexpected all result: " + all);
+            }
+
+            java.util.List<String> limit1 = service.findMethodsCallingMethod("invoke.Callee", "methodB()V", 1);
+            if (limit1.size() != 1 || !expected.contains(limit1.get(0))) {
+                throw new AssertionError("Unexpected limit result: " + limit1);
+            }
+        }
+    }
 }
