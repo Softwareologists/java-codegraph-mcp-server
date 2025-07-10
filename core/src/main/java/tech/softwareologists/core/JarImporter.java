@@ -85,6 +85,8 @@ public class JarImporter {
                         Map<String, java.util.List<String>> methodAnnos = new HashMap<>();
                         Map<String, String> methodRoutes = new HashMap<>();
                         Map<String, String> methodVerbs = new HashMap<>();
+                        Map<String, String> eventTypes = new HashMap<>();
+                        Map<String, String> cronExprs = new HashMap<>();
                         Set<String> usesDeps = new HashSet<>();
                         try (java.io.InputStream in = classInfo.getResource().open()) {
                             ClassReader cr = new ClassReader(in);
@@ -195,6 +197,68 @@ public class JarImporter {
                                                         super.visitEnd();
                                                     }
                                                 };
+                                            } else if ("org.springframework.context.event.EventListener".equals(ann)) {
+                                                return new AnnotationVisitor(Opcodes.ASM9, parent) {
+                                                    String evType = null;
+
+                                                    @Override
+                                                    public void visit(String name, Object value) {
+                                                        if (("classes".equals(name) || "value".equals(name)) && value instanceof Type) {
+                                                            evType = ((Type) value).getClassName();
+                                                        }
+                                                    }
+
+                                                    @Override
+                                                    public AnnotationVisitor visitArray(String name) {
+                                                        if ("classes".equals(name) || "value".equals(name)) {
+                                                            return new AnnotationVisitor(Opcodes.ASM9) {
+                                                                String first = null;
+
+                                                                @Override
+                                                                public void visit(String n, Object v) {
+                                                                    if (v instanceof Type && first == null) {
+                                                                        first = ((Type) v).getClassName();
+                                                                    }
+                                                                }
+
+                                                                @Override
+                                                                public void visitEnd() {
+                                                                    if (first != null) {
+                                                                        evType = first;
+                                                                    }
+                                                                }
+                                                            };
+                                                        }
+                                                        return super.visitArray(name);
+                                                    }
+
+                                                    @Override
+                                                    public void visitEnd() {
+                                                        if (evType != null) {
+                                                            eventTypes.put(sig, evType);
+                                                        }
+                                                        super.visitEnd();
+                                                    }
+                                                };
+                                            } else if ("org.springframework.scheduling.annotation.Scheduled".equals(ann)) {
+                                                return new AnnotationVisitor(Opcodes.ASM9, parent) {
+                                                    String cron = null;
+
+                                                    @Override
+                                                    public void visit(String name, Object value) {
+                                                        if ("cron".equals(name) && value instanceof String) {
+                                                            cron = (String) value;
+                                                        }
+                                                    }
+
+                                                    @Override
+                                                    public void visitEnd() {
+                                                        if (cron != null) {
+                                                            cronExprs.put(sig, cron);
+                                                        }
+                                                        super.visitEnd();
+                                                    }
+                                                };
                                             }
                                             return parent;
                                         }
@@ -225,10 +289,23 @@ public class JarImporter {
                                     Values.parameters("cls", cls, "sig", en.getKey(), "route", en.getValue()));
                         }
 
+
                         for (Map.Entry<String, String> en : methodVerbs.entrySet()) {
                             session.run(
                                     "MATCH (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig}) SET m.httpMethod=$verb",
                                     Values.parameters("cls", cls, "sig", en.getKey(), "verb", en.getValue()));
+                        }
+
+                        for (Map.Entry<String, String> en : eventTypes.entrySet()) {
+                            session.run(
+                                    "MATCH (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig}) SET m.eventType=$type",
+                                    Values.parameters("cls", cls, "sig", en.getKey(), "type", en.getValue()));
+                        }
+
+                        for (Map.Entry<String, String> en : cronExprs.entrySet()) {
+                            session.run(
+                                    "MATCH (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig}) SET m.cron=$cron",
+                                    Values.parameters("cls", cls, "sig", en.getKey(), "cron", en.getValue()));
                         }
 
                         for (Map.Entry<String, Set<String>> entry : calls.entrySet()) {

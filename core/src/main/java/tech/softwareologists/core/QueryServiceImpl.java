@@ -117,4 +117,24 @@ public class QueryServiceImpl implements QueryService {
                     .list(r -> r.get("name").asString());
         }
     }
+
+    @Override
+    public List<String> findEventListeners(String eventType) {
+        try (Session session = driver.session()) {
+            String query =
+                    "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.eventType = $type RETURN m.class + '|' + m.signature AS m";
+            return session.run(query, Values.parameters("type", eventType))
+                    .list(r -> r.get("m").asString());
+        }
+    }
+
+    @Override
+    public List<String> findScheduledTasks() {
+        try (Session session = driver.session()) {
+            String query =
+                    "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.cron IS NOT NULL RETURN m.class + '|' + m.signature + '|' + m.cron AS m";
+            return session.run(query, Values.parameters())
+                    .list(r -> r.get("m").asString());
+        }
+    }
 }

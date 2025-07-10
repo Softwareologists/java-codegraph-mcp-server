@@ -404,4 +404,105 @@ public class QueryServiceImplTest {
             }
         }
     }
+
+    @Test
+    public void eventListener_importAndQuery_returnsMethod() throws Exception {
+        java.nio.file.Path src = java.nio.file.Files.createTempDirectory("evsrc");
+        java.nio.file.Path pkg = src.resolve("evt");
+        java.nio.file.Files.createDirectories(pkg);
+
+        java.nio.file.Path listenerAnno = pkg.resolveSibling("org/springframework/context/event/EventListener.java");
+        java.nio.file.Files.createDirectories(listenerAnno.getParent());
+        java.nio.file.Files.write(listenerAnno,
+                ("package org.springframework.context.event;" +
+                        "@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)" +
+                        "@java.lang.annotation.Target(java.lang.annotation.ElementType.METHOD)" +
+                        "public @interface EventListener { Class<?>[] classes() default {}; }").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        java.nio.file.Path event = pkg.resolve("MyEvent.java");
+        java.nio.file.Files.write(event, "package evt; public class MyEvent {}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        java.nio.file.Path listener = pkg.resolve("MyListener.java");
+        java.nio.file.Files.write(listener,
+                ("package evt;" +
+                        "import org.springframework.context.event.EventListener;" +
+                        "public class MyListener {" +
+                        "  @EventListener(classes=MyEvent.class) public void handle(evt.MyEvent e) {}" +
+                        "}").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) throw new IllegalStateException("Java compiler not available");
+        int res = compiler.run(null, null, null, listenerAnno.toString(), event.toString(), listener.toString());
+        if (res != 0) throw new IllegalStateException("Compilation failed");
+
+        java.io.File jar = java.io.File.createTempFile("evt", ".jar");
+        try (java.util.jar.JarOutputStream jos = new java.util.jar.JarOutputStream(new java.io.FileOutputStream(jar))) {
+            for (String n : new String[]{"org/springframework/context/event/EventListener.class", "evt/MyEvent.class", "evt/MyListener.class"}) {
+                jos.putNextEntry(new java.util.jar.JarEntry(n));
+                java.nio.file.Path p = n.contains("EventListener.class") ? listenerAnno.getParent().resolve("EventListener.class") : pkg.resolve(n.substring(n.lastIndexOf('/') + 1));
+                java.nio.file.Files.copy(p, jos);
+                jos.closeEntry();
+            }
+        }
+
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            org.neo4j.driver.Driver driver = db.getDriver();
+            JarImporter.importJar(jar, driver);
+
+            QueryService svc = new QueryServiceImpl(driver);
+            java.util.List<String> listeners = svc.findEventListeners("evt.MyEvent");
+            if (listeners.size() != 1 || !listeners.get(0).contains("handle")) {
+                throw new AssertionError("Unexpected listeners: " + listeners);
+            }
+        }
+    }
+
+    @Test
+    public void scheduledTask_importAndQuery_returnsMethod() throws Exception {
+        java.nio.file.Path src = java.nio.file.Files.createTempDirectory("schedsrc");
+        java.nio.file.Path pkg = src.resolve("sch");
+        java.nio.file.Files.createDirectories(pkg);
+
+        java.nio.file.Path schedAnno = pkg.resolveSibling("org/springframework/scheduling/annotation/Scheduled.java");
+        java.nio.file.Files.createDirectories(schedAnno.getParent());
+        java.nio.file.Files.write(schedAnno,
+                ("package org.springframework.scheduling.annotation;" +
+                        "@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)" +
+                        "@java.lang.annotation.Target(java.lang.annotation.ElementType.METHOD)" +
+                        "public @interface Scheduled { String cron(); }").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        java.nio.file.Path task = pkg.resolve("Task.java");
+        java.nio.file.Files.write(task,
+                ("package sch;" +
+                        "import org.springframework.scheduling.annotation.Scheduled;" +
+                        "public class Task {" +
+                        "  @Scheduled(cron=\"0 0 * * * *\") public void run() {}" +
+                        "}").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) throw new IllegalStateException("Java compiler not available");
+        int res2 = compiler.run(null, null, null, schedAnno.toString(), task.toString());
+        if (res2 != 0) throw new IllegalStateException("Compilation failed");
+
+        java.io.File jar = java.io.File.createTempFile("sch", ".jar");
+        try (java.util.jar.JarOutputStream jos = new java.util.jar.JarOutputStream(new java.io.FileOutputStream(jar))) {
+            for (String n : new String[]{"org/springframework/scheduling/annotation/Scheduled.class", "sch/Task.class"}) {
+                jos.putNextEntry(new java.util.jar.JarEntry(n));
+                java.nio.file.Path p = n.contains("Scheduled.class") ? schedAnno.getParent().resolve("Scheduled.class") : pkg.resolve("Task.class");
+                java.nio.file.Files.copy(p, jos);
+                jos.closeEntry();
+            }
+        }
+
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            org.neo4j.driver.Driver driver = db.getDriver();
+            JarImporter.importJar(jar, driver);
+
+            QueryService svc = new QueryServiceImpl(driver);
+            java.util.List<String> tasks = svc.findScheduledTasks();
+            if (tasks.size() != 1 || !tasks.get(0).contains("run()V|0 0 * * * *")) {
+                throw new AssertionError("Unexpected tasks: " + tasks);
+            }
+        }
+    }
 }
