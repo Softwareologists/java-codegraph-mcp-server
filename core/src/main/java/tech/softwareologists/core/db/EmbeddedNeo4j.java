@@ -23,6 +23,8 @@ public class EmbeddedNeo4j implements AutoCloseable {
         // ensure index on Class name
         try (Session session = driver.session()) {
             session.run("CREATE INDEX class_name IF NOT EXISTS FOR (c:" + NodeLabel.CLASS + ") ON (c.name)");
+            session.run(
+                    "CREATE INDEX method_identity IF NOT EXISTS FOR (m:" + NodeLabel.METHOD + ") ON (m.class, m.signature)");
         }
     }
 
