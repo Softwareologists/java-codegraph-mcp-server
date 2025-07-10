@@ -81,6 +81,11 @@ public class StdioMcpServerTest {
             public java.util.List<String> findConfigPropertyUsage(String propertyKey) {
                 return java.util.Collections.emptyList();
             }
+
+            @Override
+            public String getPackageHierarchy(String rootPackage, Integer depth) {
+                return "{}";
+            }
         };
         new StdioMcpServer(qs, in, new PrintStream(out)).run();
 
