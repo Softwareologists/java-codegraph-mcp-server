@@ -61,4 +61,19 @@ public interface QueryService {
      * @return list of controller class names
      */
     List<String> findControllersUsingService(String serviceClassName);
+
+    /**
+     * Find methods annotated with {@code @EventListener} for the given event type.
+     *
+     * @param eventType fully qualified event class name
+     * @return list of "class|signature" pairs
+     */
+    List<String> findEventListeners(String eventType);
+
+    /**
+     * Find methods annotated with {@code @Scheduled}.
+     *
+     * @return list of "class|signature|cron" entries
+     */
+    List<String> findScheduledTasks();
 }

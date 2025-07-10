@@ -61,6 +61,16 @@ public class StdioMcpServerTest {
             public java.util.List<String> findControllersUsingService(String serviceClassName) {
                 return java.util.Collections.emptyList();
             }
+
+            @Override
+            public java.util.List<String> findEventListeners(String eventType) {
+                return java.util.Collections.emptyList();
+            }
+
+            @Override
+            public java.util.List<String> findScheduledTasks() {
+                return java.util.Collections.emptyList();
+            }
         };
         new StdioMcpServer(qs, in, new PrintStream(out)).run();
 
