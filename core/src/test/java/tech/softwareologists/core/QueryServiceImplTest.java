@@ -141,4 +141,49 @@ public class QueryServiceImplTest {
             }
         }
     }
+
+    @Test
+    public void findMethodsCallingMethod_singleCaller_returnsSignature() {
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            Driver driver = db.getDriver();
+            try (Session session = driver.session()) {
+                session.run("CREATE (:" + NodeLabel.METHOD + " {class:'A', signature:'a()V'})");
+                session.run("CREATE (:" + NodeLabel.METHOD + " {class:'B', signature:'b()V'})");
+                session.run("MATCH (c:" + NodeLabel.METHOD + " {class:'B', signature:'b()V'}), (t:" + NodeLabel.METHOD + " {class:'A', signature:'a()V'}) CREATE (c)-[:CALLS]->(t)");
+            }
+
+            QueryService service = new QueryServiceImpl(driver);
+            List<String> callers = service.findMethodsCallingMethod("A", "a()V", null);
+            if (callers.size() != 1 || !callers.get(0).equals("b()V")) {
+                throw new AssertionError("Unexpected callers: " + callers);
+            }
+        }
+    }
+
+    @Test
+    public void findMethodsCallingMethod_multipleCallers_respectsLimit() {
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            Driver driver = db.getDriver();
+            try (Session session = driver.session()) {
+                session.run("CREATE (:" + NodeLabel.METHOD + " {class:'A', signature:'a()V'})");
+                session.run("CREATE (:" + NodeLabel.METHOD + " {class:'B', signature:'b()V'})");
+                session.run("CREATE (:" + NodeLabel.METHOD + " {class:'C', signature:'c()V'})");
+                session.run("MATCH (b:" + NodeLabel.METHOD + " {class:'B', signature:'b()V'}), (t:" + NodeLabel.METHOD + " {class:'A', signature:'a()V'}) CREATE (b)-[:CALLS]->(t)");
+                session.run("MATCH (c:" + NodeLabel.METHOD + " {class:'C', signature:'c()V'}), (t:" + NodeLabel.METHOD + " {class:'A', signature:'a()V'}) CREATE (c)-[:CALLS]->(t)");
+            }
+
+            QueryService service = new QueryServiceImpl(driver);
+            List<String> limit1 = service.findMethodsCallingMethod("A", "a()V", 1);
+            if (limit1.size() != 1) {
+                throw new AssertionError("Unexpected limit1 result: " + limit1);
+            }
+            List<String> all = service.findMethodsCallingMethod("A", "a()V", null);
+            java.util.Set<String> expected = new java.util.HashSet<>();
+            expected.add("b()V");
+            expected.add("c()V");
+            if (!all.containsAll(expected) || all.size() != 2) {
+                throw new AssertionError("Unexpected all result: " + all);
+            }
+        }
+    }
 }

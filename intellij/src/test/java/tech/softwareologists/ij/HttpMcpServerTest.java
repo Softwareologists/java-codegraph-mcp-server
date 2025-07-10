@@ -35,6 +35,11 @@ public class HttpMcpServerTest {
             public java.util.List<String> findDependencies(String className, Integer depth) {
                 return java.util.Collections.emptyList();
             }
+
+            @Override
+            public java.util.List<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit) {
+                return java.util.Collections.emptyList();
+            }
         };
         HttpMcpServer server = new HttpMcpServer(0, qs);
         server.start();

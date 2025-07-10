@@ -17,4 +17,14 @@ public interface QueryService {
      * @return list of dependent class names
      */
     List<String> findDependencies(String className, Integer depth);
+
+    /**
+     * Find methods that invoke a given target method.
+     *
+     * @param className fully qualified class name containing the target method
+     * @param methodSignature JVM signature of the target method
+     * @param limit maximum number of caller methods to return, or {@code null} for no limit
+     * @return list of caller method signatures
+     */
+    List<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit);
 }

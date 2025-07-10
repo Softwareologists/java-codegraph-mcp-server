@@ -15,5 +15,11 @@ public class ManifestGeneratorTest {
         if (!manifest.contains("findSubclasses")) {
             throw new AssertionError("Manifest missing findSubclasses capability: " + manifest);
         }
+        if (!manifest.contains("findDependencies")) {
+            throw new AssertionError("Manifest missing findDependencies capability: " + manifest);
+        }
+        if (!manifest.contains("findMethodsCallingMethod")) {
+            throw new AssertionError("Manifest missing findMethodsCallingMethod capability: " + manifest);
+        }
     }
 }
