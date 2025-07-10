@@ -10,6 +10,7 @@
     { "name": "findMethodsCallingMethod", "params": ["className", "methodSignature", "limit"] },
     { "name": "findBeansWithAnnotation", "params": ["annotation"] },
     { "name": "searchByAnnotation", "params": ["annotation", "targetType"] },
-    { "name": "findControllersUsingService", "params": ["serviceClassName"] }
+    { "name": "findControllersUsingService", "params": ["serviceClassName"] },
+    { "name": "getPackageHierarchy", "params": ["rootPackage", "depth"] }
   ]
 }

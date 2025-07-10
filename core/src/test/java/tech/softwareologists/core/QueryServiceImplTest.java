@@ -601,4 +601,51 @@ public class QueryServiceImplTest {
             }
         }
     }
+
+    @Test
+    public void getPackageHierarchy_multiplePackages_returnsTree() throws Exception {
+        java.nio.file.Path src = java.nio.file.Files.createTempDirectory("pkgsrc");
+        java.nio.file.Path pkgA = src.resolve("p1/a");
+        java.nio.file.Path pkgB = src.resolve("p1/b");
+        java.nio.file.Path sub = src.resolve("p1/a/sub");
+        java.nio.file.Files.createDirectories(sub);
+        java.nio.file.Files.createDirectories(pkgB);
+
+        java.nio.file.Path classA = pkgA.resolve("A.java");
+        java.nio.file.Files.write(classA, "package p1.a; public class A {}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        java.nio.file.Path classB = pkgB.resolve("B.java");
+        java.nio.file.Files.write(classB, "package p1.b; public class B {}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        java.nio.file.Path classC = sub.resolve("C.java");
+        java.nio.file.Files.write(classC, "package p1.a.sub; public class C {}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) throw new IllegalStateException("Java compiler not available");
+        int res = compiler.run(null, null, null, classA.toString(), classB.toString(), classC.toString());
+        if (res != 0) throw new IllegalStateException("Compilation failed");
+
+        java.io.File jar = java.io.File.createTempFile("pkg", ".jar");
+        try (java.util.jar.JarOutputStream jos = new java.util.jar.JarOutputStream(new java.io.FileOutputStream(jar))) {
+            jos.putNextEntry(new java.util.jar.JarEntry("p1/a/A.class"));
+            java.nio.file.Files.copy(pkgA.resolve("A.class"), jos);
+            jos.closeEntry();
+            jos.putNextEntry(new java.util.jar.JarEntry("p1/b/B.class"));
+            java.nio.file.Files.copy(pkgB.resolve("B.class"), jos);
+            jos.closeEntry();
+            jos.putNextEntry(new java.util.jar.JarEntry("p1/a/sub/C.class"));
+            java.nio.file.Files.copy(sub.resolve("C.class"), jos);
+            jos.closeEntry();
+        }
+
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            org.neo4j.driver.Driver driver = db.getDriver();
+            JarImporter.importJar(jar, driver);
+
+            QueryService svc = new QueryServiceImpl(driver);
+            String tree = svc.getPackageHierarchy("p1", 2);
+            String expected = "{\"name\":\"p1\",\"packages\":[{\"name\":\"p1.a\",\"classes\":[\"p1.a.A\"],\"packages\":[{\"name\":\"p1.a.sub\",\"classes\":[\"p1.a.sub.C\"]}]},{\"name\":\"p1.b\",\"classes\":[\"p1.b.B\"]}]}";
+            if (!tree.equals(expected)) {
+                throw new AssertionError("Unexpected tree: " + tree);
+            }
+        }
+    }
 }
