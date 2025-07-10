@@ -94,4 +94,13 @@ public interface QueryService {
      * @return list of class names or "class|signature" for methods
      */
     List<String> findConfigPropertyUsage(String propertyKey);
+
+    /**
+     * Return a JSON tree of packages and classes starting from the given root package.
+     *
+     * @param rootPackage root package name
+     * @param depth maximum depth of sub-packages to include, or {@code null} for no limit
+     * @return nested JSON describing the package hierarchy
+     */
+    String getPackageHierarchy(String rootPackage, Integer depth);
 }

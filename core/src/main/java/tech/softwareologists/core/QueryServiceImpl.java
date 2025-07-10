@@ -167,4 +167,81 @@ public class QueryServiceImpl implements QueryService {
                     .list(r -> r.get("loc").asString());
         }
     }
+
+    @Override
+    public String getPackageHierarchy(String rootPackage, Integer depth) {
+        try (Session session = driver.session()) {
+            var results = session.run(
+                    "MATCH (p:" + NodeLabel.PACKAGE + ")-[:CONTAINS]->(c:" + NodeLabel.CLASS + ") " +
+                            "WHERE p.name STARTS WITH $root RETURN p.name AS pkg, c.name AS cls",
+                    Values.parameters("root", rootPackage));
+
+            class PackageNode {
+                String name;
+                java.util.Map<String, PackageNode> children = new java.util.TreeMap<>();
+                java.util.List<String> classes = new java.util.ArrayList<>();
+
+                PackageNode(String name) { this.name = name; }
+            }
+
+            String[] rootParts = rootPackage.isEmpty() ? new String[0] : rootPackage.split("\\.");
+            PackageNode root = new PackageNode(rootPackage);
+
+            java.util.function.Function<String, Integer> depthCalc = pkg -> {
+                if (pkg.isEmpty()) return 0;
+                int diff = pkg.split("\\.").length - rootParts.length;
+                return diff;
+            };
+
+            while (results.hasNext()) {
+                var rec = results.next();
+                String pkg = rec.get("pkg").asString();
+                String cls = rec.get("cls").asString();
+                int d = depthCalc.apply(pkg);
+                if (depth != null && d > depth) continue;
+                PackageNode node = root;
+                if (!pkg.equals(rootPackage)) {
+                    String rel = pkg.substring(rootPackage.isEmpty() ? 0 : rootPackage.length() + 1);
+                    String[] parts = rel.split("\\.");
+                    String current = rootPackage;
+                    for (int i = 0; i < parts.length && (depth == null || i + 1 <= depth); i++) {
+                        current = current.isEmpty() ? parts[i] : current + "." + parts[i];
+                        node = node.children.computeIfAbsent(current, PackageNode::new);
+                    }
+                }
+                node.classes.add(cls);
+            }
+
+            java.util.function.Function<PackageNode, String> toJson = new java.util.function.Function<PackageNode, String>() {
+                @Override
+                public String apply(PackageNode n) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append('{').append("\"name\":\"").append(n.name).append("\"");
+                    if (!n.classes.isEmpty()) {
+                        java.util.Collections.sort(n.classes);
+                        sb.append(",\"classes\":[");
+                        for (int i = 0; i < n.classes.size(); i++) {
+                            if (i > 0) sb.append(',');
+                            sb.append('"').append(n.classes.get(i)).append('"');
+                        }
+                        sb.append(']');
+                    }
+                    if (!n.children.isEmpty()) {
+                        sb.append(",\"packages\":[");
+                        boolean first = true;
+                        for (PackageNode child : n.children.values()) {
+                            if (!first) sb.append(',');
+                            first = false;
+                            sb.append(apply(child));
+                        }
+                        sb.append(']');
+                    }
+                    sb.append('}');
+                    return sb.toString();
+                }
+            };
+
+            return toJson.apply(root);
+        }
+    }
 }

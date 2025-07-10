@@ -69,6 +69,15 @@ public class JarImporter {
                         session.run(
                                 "MERGE (c:" + NodeLabel.CLASS + " {name:$name})",
                                 Values.parameters("name", cls));
+                        String pkgName = classInfo.getPackageName();
+                        if (pkgName != null && !pkgName.isEmpty()) {
+                            session.run(
+                                    "MERGE (p:" + NodeLabel.PACKAGE + " {name:$pkg})",
+                                    Values.parameters("pkg", pkgName));
+                            session.run(
+                                    "MATCH (p:" + NodeLabel.PACKAGE + " {name:$pkg}), (c:" + NodeLabel.CLASS + " {name:$cls}) MERGE (p)-[:CONTAINS]->(c)",
+                                    Values.parameters("pkg", pkgName, "cls", cls));
+                        }
 
                         // record annotations on the class
                         java.util.List<String> annos = new java.util.ArrayList<>();

@@ -33,5 +33,8 @@ public class ManifestGeneratorTest {
         if (!manifest.contains("findControllersUsingService")) {
             throw new AssertionError("Manifest missing findControllersUsingService capability: " + manifest);
         }
+        if (!manifest.contains("getPackageHierarchy")) {
+            throw new AssertionError("Manifest missing getPackageHierarchy capability: " + manifest);
+        }
     }
 }

@@ -80,6 +80,11 @@ public class HttpMcpServerTest {
             public java.util.List<String> findConfigPropertyUsage(String propertyKey) {
                 return java.util.Collections.emptyList();
             }
+
+            @Override
+            public String getPackageHierarchy(String rootPackage, Integer depth) {
+                return "{}";
+            }
         };
         HttpMcpServer server = new HttpMcpServer(0, qs);
         server.start();
