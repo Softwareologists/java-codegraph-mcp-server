@@ -35,11 +35,11 @@ jobs:
             }));
       - name: Write `_data/milestones.json`
         run: |
-          echo "${{ toJson(steps.get-ms.outputs.result) }}" > _data/milestones.json
+          echo "${{ toJson(steps.get-ms.outputs.result) }}" > docs/_data/milestones.json
 
       - name: Commit & Push updated data
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "chore: update milestones data"
-          file_pattern: "_data/milestones.json"
+          file_pattern: "docs/_data/milestones.json"
 
