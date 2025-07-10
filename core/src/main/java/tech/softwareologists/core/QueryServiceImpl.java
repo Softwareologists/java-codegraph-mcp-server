@@ -59,4 +59,20 @@ public class QueryServiceImpl implements QueryService {
                     .list(r -> r.get("name").asString());
         }
     }
+
+    @Override
+    public List<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit) {
+        try (Session session = driver.session()) {
+            String query =
+                    "MATCH (caller:" + NodeLabel.METHOD + ")-[:CALLS]->(target:" + NodeLabel.METHOD + " {class:$class, signature:$sig}) " +
+                            "RETURN caller.signature AS sig";
+            var params = Values.parameters("class", className, "sig", methodSignature);
+            if (limit != null) {
+                query += " LIMIT $limit";
+                params = Values.parameters("class", className, "sig", methodSignature, "limit", limit);
+            }
+            return session.run(query, params)
+                    .list(r -> r.get("sig").asString());
+        }
+    }
 }
