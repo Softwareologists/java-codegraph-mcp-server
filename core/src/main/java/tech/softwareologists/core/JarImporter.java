@@ -2,13 +2,22 @@ package tech.softwareologists.core;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
+import io.github.classgraph.MethodInfo;
 import io.github.classgraph.ScanResult;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Values;
 import tech.softwareologists.core.db.NodeLabel;
 import java.io.File;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,6 +54,55 @@ public class JarImporter {
                         session.run(
                                 "MERGE (c:" + NodeLabel.CLASS + " {name:$name})",
                                 Values.parameters("name", cls));
+
+                        // parse bytecode to create method nodes and call edges
+                        List<String> methodNames = new java.util.ArrayList<>();
+                        Map<String, Set<String>> calls = new HashMap<>();
+                        try (java.io.InputStream in = classInfo.getResource().open()) {
+                            ClassReader cr = new ClassReader(in);
+                            cr.accept(new ClassVisitor(Opcodes.ASM9) {
+                                @Override
+                                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                                    String sig = name + descriptor;
+                                    methodNames.add(sig);
+                                    session.run(
+                                            "MERGE (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig})",
+                                            Values.parameters("cls", cls, "sig", sig));
+                                    return new MethodVisitor(Opcodes.ASM9) {
+                                        @Override
+                                        public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                                            String tgtCls = owner.replace('/', '.');
+                                            String tgtSig = name + descriptor;
+                                            calls.computeIfAbsent(sig, k -> new HashSet<>())
+                                                    .add(tgtCls + "|" + tgtSig);
+                                        }
+                                    };
+                                }
+                            }, 0);
+                        }
+                        if (!methodNames.isEmpty()) {
+                            LOGGER.info("Methods in " + cls + ": " + methodNames);
+                        }
+
+                        for (Map.Entry<String, Set<String>> entry : calls.entrySet()) {
+                            String fromSig = entry.getKey();
+                            for (String tgtCombined : entry.getValue()) {
+                                int idx = tgtCombined.indexOf('|');
+                                String tgtCls = tgtCombined.substring(0, idx);
+                                String tgtSig = tgtCombined.substring(idx + 1);
+                                session.run(
+                                        "MERGE (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig})",
+                                        Values.parameters("cls", tgtCls, "sig", tgtSig));
+                                session.run(
+                                        "MATCH (s:" + NodeLabel.METHOD + " {class:$scls, signature:$ssig}), " +
+                                                "(t:" + NodeLabel.METHOD + " {class:$tcls, signature:$tsig}) MERGE (s)-[:CALLS]->(t)",
+                                        Values.parameters(
+                                                "scls", cls,
+                                                "ssig", fromSig,
+                                                "tcls", tgtCls,
+                                                "tsig", tgtSig));
+                            }
+                        }
 
                         java.util.Set<String> seenDeps = new java.util.HashSet<>();
                         for (ClassInfo dep : classInfo.getClassDependencies()) {

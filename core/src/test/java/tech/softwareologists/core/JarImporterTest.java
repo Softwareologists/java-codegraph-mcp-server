@@ -165,4 +165,49 @@ public class JarImporterTest {
             }
         }
     }
+
+    @Test
+    public void importJar_methodCall_createsEdge() throws Exception {
+        Path srcDir = Files.createTempDirectory("srcmethod");
+        Path pkgDir = srcDir.resolve("calls");
+        Files.createDirectories(pkgDir);
+
+        Path calleeFile = pkgDir.resolve("Callee.java");
+        Files.write(calleeFile, "package calls; public class Callee { public void m() {} }".getBytes(StandardCharsets.UTF_8));
+
+        Path callerFile = pkgDir.resolve("Caller.java");
+        Files.write(callerFile, "package calls; public class Caller { public void n() { new Callee().m(); } }".getBytes(StandardCharsets.UTF_8));
+
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) {
+            throw new IllegalStateException("Java compiler not available");
+        }
+        int res = compiler.run(null, null, null, calleeFile.toString(), callerFile.toString());
+        if (res != 0) {
+            throw new IllegalStateException("Compilation failed");
+        }
+
+        File jar = File.createTempFile("calls", ".jar");
+        try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(jar))) {
+            for (String n : new String[]{"calls/Callee.class", "calls/Caller.class"}) {
+                jos.putNextEntry(new JarEntry(n));
+                Files.copy(pkgDir.resolve(n.substring(n.lastIndexOf('/') + 1)), jos);
+                jos.closeEntry();
+            }
+        }
+
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            Driver driver = db.getDriver();
+            JarImporter.importJar(jar, driver);
+
+            try (Session session = driver.session()) {
+                java.util.List<Record> rel = session.run(
+                                "MATCH (s:" + NodeLabel.METHOD + " {class:'calls.Caller', signature:'n()V'})-[:CALLS]->(t:" + NodeLabel.METHOD + " {class:'calls.Callee', signature:'m()V'}) RETURN t")
+                        .list();
+                if (rel.isEmpty()) {
+                    throw new AssertionError("CALLS edge not created");
+                }
+            }
+        }
+    }
 }
