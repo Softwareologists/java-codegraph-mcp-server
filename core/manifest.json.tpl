@@ -8,6 +8,7 @@
     { "name": "findDependencies", "params": ["className", "depth"] },
     { "name": "findMethodsCallingMethod", "params": ["className", "methodSignature", "limit"] },
     { "name": "findBeansWithAnnotation", "params": ["annotation"] },
-    { "name": "searchByAnnotation", "params": ["annotation", "targetType"] }
+    { "name": "searchByAnnotation", "params": ["annotation", "targetType"] },
+    { "name": "findControllersUsingService", "params": ["serviceClassName"] }
   ]
 }

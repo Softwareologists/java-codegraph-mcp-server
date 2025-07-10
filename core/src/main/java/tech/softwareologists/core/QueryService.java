@@ -53,4 +53,12 @@ public interface QueryService {
      * @return list of "class|signature" pairs
      */
     List<String> findHttpEndpoints(String basePath, String httpMethod);
+
+    /**
+     * Find controller classes that use the specified service class via injection.
+     *
+     * @param serviceClassName fully qualified service class name
+     * @return list of controller class names
+     */
+    List<String> findControllersUsingService(String serviceClassName);
 }

@@ -105,4 +105,16 @@ public class QueryServiceImpl implements QueryService {
                     .list(r -> r.get("ep").asString());
         }
     }
+
+    @Override
+    public List<String> findControllersUsingService(String serviceClassName) {
+        try (Session session = driver.session()) {
+            String query =
+                    "MATCH (svc:" + NodeLabel.CLASS + " {name:$svc})<-[:USES]-(c:" + NodeLabel.CLASS + ") " +
+                            "WHERE ANY(a IN c.annotations WHERE a IN ['org.springframework.stereotype.Controller','org.springframework.web.bind.annotation.RestController']) " +
+                            "RETURN c.name AS name";
+            return session.run(query, Values.parameters("svc", serviceClassName))
+                    .list(r -> r.get("name").asString());
+        }
+    }
 }

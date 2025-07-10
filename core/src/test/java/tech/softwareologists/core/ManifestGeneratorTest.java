@@ -27,5 +27,8 @@ public class ManifestGeneratorTest {
         if (!manifest.contains("searchByAnnotation")) {
             throw new AssertionError("Manifest missing searchByAnnotation capability: " + manifest);
         }
+        if (!manifest.contains("findControllersUsingService")) {
+            throw new AssertionError("Manifest missing findControllersUsingService capability: " + manifest);
+        }
     }
 }
