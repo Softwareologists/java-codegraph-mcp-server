@@ -1,5 +1,1 @@
-{% assign ms = site.data.milestones %}
-{% for m in ms %}
-  <h2>{{ m.title }} ({{ m.open_issues }}/ {{ m.issues }} open)</h2>
-  <p>Due: {{ m.due_on | date: "%b %-d, %Y" }}</p>
-{% endfor %}
+["title":"1.0.0"] ["number":1] ["open_issues":11] ["due_on":null]
