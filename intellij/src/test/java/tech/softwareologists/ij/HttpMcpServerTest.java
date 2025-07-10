@@ -37,6 +37,11 @@ public class HttpMcpServerTest {
             }
 
             @Override
+            public java.util.List<String> findPathBetweenClasses(String fromClass, String toClass, Integer maxDepth) {
+                return java.util.Collections.emptyList();
+            }
+
+            @Override
             public java.util.List<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit) {
                 return java.util.Collections.emptyList();
             }

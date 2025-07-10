@@ -6,6 +6,7 @@
     { "name": "findImplementations", "params": ["interfaceName"] },
     { "name": "findSubclasses", "params": ["className", "depth"] },
     { "name": "findDependencies", "params": ["className", "depth"] },
+    { "name": "findPathBetweenClasses", "params": ["fromClass", "toClass", "maxDepth"] },
     { "name": "findMethodsCallingMethod", "params": ["className", "methodSignature", "limit"] },
     { "name": "findBeansWithAnnotation", "params": ["annotation"] },
     { "name": "searchByAnnotation", "params": ["annotation", "targetType"] },

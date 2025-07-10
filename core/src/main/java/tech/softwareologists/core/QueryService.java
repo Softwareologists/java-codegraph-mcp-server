@@ -15,8 +15,18 @@ public interface QueryService {
      * @param className name of the source class
      * @param depth maximum number of dependency classes to return, or {@code null} for no limit
      * @return list of dependent class names
-     */
+    */
     List<String> findDependencies(String className, Integer depth);
+
+    /**
+     * Find the shortest dependency path from one class to another.
+     *
+     * @param fromClass starting class name
+     * @param toClass target class name
+     * @param maxDepth maximum path length, or {@code null} for no limit
+     * @return ordered list of class names from source to target, or empty if no path
+     */
+    List<String> findPathBetweenClasses(String fromClass, String toClass, Integer maxDepth);
 
     /**
      * Find methods that invoke a given target method.

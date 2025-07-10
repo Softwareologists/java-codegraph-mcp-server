@@ -143,6 +143,34 @@ public class QueryServiceImplTest {
     }
 
     @Test
+    public void findPathBetweenClasses_chain_respectsMaxDepth() {
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            Driver driver = db.getDriver();
+            try (Session session = driver.session()) {
+                session.run("CREATE (:" + NodeLabel.CLASS + " {name:'A'})");
+                session.run("CREATE (:" + NodeLabel.CLASS + " {name:'B'})");
+                session.run("CREATE (:" + NodeLabel.CLASS + " {name:'C'})");
+                session.run("CREATE (:" + NodeLabel.CLASS + " {name:'D'})");
+                session.run("MATCH (a:" + NodeLabel.CLASS + " {name:'A'}), (b:" + NodeLabel.CLASS + " {name:'B'}) CREATE (a)-[:DEPENDS_ON]->(b)");
+                session.run("MATCH (b:" + NodeLabel.CLASS + " {name:'B'}), (c:" + NodeLabel.CLASS + " {name:'C'}) CREATE (b)-[:DEPENDS_ON]->(c)");
+                session.run("MATCH (c:" + NodeLabel.CLASS + " {name:'C'}), (d:" + NodeLabel.CLASS + " {name:'D'}) CREATE (c)-[:DEPENDS_ON]->(d)");
+            }
+
+            QueryService service = new QueryServiceImpl(driver);
+            java.util.List<String> within = service.findPathBetweenClasses("A", "D", 3);
+            java.util.List<String> expected = java.util.Arrays.asList("A", "B", "C", "D");
+            if (!within.equals(expected)) {
+                throw new AssertionError("Unexpected path: " + within);
+            }
+
+            java.util.List<String> tooShort = service.findPathBetweenClasses("A", "D", 2);
+            if (!tooShort.isEmpty()) {
+                throw new AssertionError("Path should be empty when exceeding depth: " + tooShort);
+            }
+        }
+    }
+
+    @Test
     public void findMethodsCallingMethod_singleCaller_returnsSignature() {
         try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
             Driver driver = db.getDriver();

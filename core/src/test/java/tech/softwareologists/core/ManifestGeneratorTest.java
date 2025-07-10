@@ -18,6 +18,9 @@ public class ManifestGeneratorTest {
         if (!manifest.contains("findDependencies")) {
             throw new AssertionError("Manifest missing findDependencies capability: " + manifest);
         }
+        if (!manifest.contains("findPathBetweenClasses")) {
+            throw new AssertionError("Manifest missing findPathBetweenClasses capability: " + manifest);
+        }
         if (!manifest.contains("findMethodsCallingMethod")) {
             throw new AssertionError("Manifest missing findMethodsCallingMethod capability: " + manifest);
         }
