@@ -173,10 +173,10 @@ public class JarImporterTest {
         Files.createDirectories(pkgDir);
 
         Path calleeFile = pkgDir.resolve("Callee.java");
-        Files.write(calleeFile, "package calls; public class Callee { public void m() {} }".getBytes(StandardCharsets.UTF_8));
+        Files.write(calleeFile, "package calls; public class Callee { public void methodB() {} }".getBytes(StandardCharsets.UTF_8));
 
         Path callerFile = pkgDir.resolve("Caller.java");
-        Files.write(callerFile, "package calls; public class Caller { public void n() { new Callee().m(); } }".getBytes(StandardCharsets.UTF_8));
+        Files.write(callerFile, "package calls; public class Caller { public void methodA() { new Callee().methodB(); } }".getBytes(StandardCharsets.UTF_8));
 
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
@@ -201,8 +201,22 @@ public class JarImporterTest {
             JarImporter.importJar(jar, driver);
 
             try (Session session = driver.session()) {
+                java.util.List<Record> caller = session.run(
+                                "MATCH (m:" + NodeLabel.METHOD + " {class:'calls.Caller', signature:'methodA()V'}) RETURN m")
+                        .list();
+                if (caller.isEmpty()) {
+                    throw new AssertionError("Caller method node not created");
+                }
+
+                java.util.List<Record> callee = session.run(
+                                "MATCH (m:" + NodeLabel.METHOD + " {class:'calls.Callee', signature:'methodB()V'}) RETURN m")
+                        .list();
+                if (callee.isEmpty()) {
+                    throw new AssertionError("Callee method node not created");
+                }
+
                 java.util.List<Record> rel = session.run(
-                                "MATCH (s:" + NodeLabel.METHOD + " {class:'calls.Caller', signature:'n()V'})-[:CALLS]->(t:" + NodeLabel.METHOD + " {class:'calls.Callee', signature:'m()V'}) RETURN t")
+                                "MATCH (s:" + NodeLabel.METHOD + " {class:'calls.Caller', signature:'methodA()V'})-[:CALLS]->(t:" + NodeLabel.METHOD + " {class:'calls.Callee', signature:'methodB()V'}) RETURN t")
                         .list();
                 if (rel.isEmpty()) {
                     throw new AssertionError("CALLS edge not created");
