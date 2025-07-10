@@ -1,0 +1,13 @@
+{%- comment -%}  _includes/milestones.html  {%- endcomment -%}
+<div class="milestones">
+  <h2>Project Milestones</h2>
+  <ul>
+    {% for m in site.data.milestones %}
+      <li>
+        <strong>{{ m.title }}</strong>
+        <span>({{ m.open_issues }}/{{ m.issues }} open)</span>
+        {% if m.due_on %}<em>— due {{ m.due_on | date: "%Y-%m-%d" }}</em>{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</div>
