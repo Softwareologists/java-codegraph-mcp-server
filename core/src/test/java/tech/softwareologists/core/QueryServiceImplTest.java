@@ -278,4 +278,72 @@ public class QueryServiceImplTest {
             }
         }
     }
+
+    @Test
+    public void findHttpEndpoints_filtersByPathAndMethod() throws Exception {
+        java.nio.file.Path src = java.nio.file.Files.createTempDirectory("httpsrc");
+        java.nio.file.Path pkg = src.resolve("web");
+        java.nio.file.Files.createDirectories(pkg);
+
+        java.nio.file.Path getAnno = pkg.resolveSibling("org/springframework/web/bind/annotation/GetMapping.java");
+        java.nio.file.Files.createDirectories(getAnno.getParent());
+        java.nio.file.Files.write(getAnno,
+                ("package org.springframework.web.bind.annotation;" +
+                        "@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)" +
+                        "@java.lang.annotation.Target(java.lang.annotation.ElementType.METHOD)" +
+                        "public @interface GetMapping { String value(); }").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        java.nio.file.Path postAnno = pkg.resolveSibling("org/springframework/web/bind/annotation/PostMapping.java");
+        java.nio.file.Files.write(postAnno,
+                ("package org.springframework.web.bind.annotation;" +
+                        "@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)" +
+                        "@java.lang.annotation.Target(java.lang.annotation.ElementType.METHOD)" +
+                        "public @interface PostMapping { String value(); }").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        java.nio.file.Path ctrl = pkg.resolve("MyController.java");
+        java.nio.file.Files.write(ctrl,
+                ("package web;" +
+                        "import org.springframework.web.bind.annotation.GetMapping;" +
+                        "import org.springframework.web.bind.annotation.PostMapping;" +
+                        "public class MyController {" +
+                        "  @GetMapping(\"/foo\") public void foo() {}" +
+                        "  @PostMapping(\"/bar\") public void bar() {}" +
+                        "}").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) throw new IllegalStateException("Java compiler not available");
+        int res = compiler.run(null, null, null,
+                getAnno.toString(), postAnno.toString(), ctrl.toString());
+        if (res != 0) throw new IllegalStateException("Compilation failed");
+
+        java.io.File jar = java.io.File.createTempFile("http", ".jar");
+        try (java.util.jar.JarOutputStream jos = new java.util.jar.JarOutputStream(new java.io.FileOutputStream(jar))) {
+            for (String n : new String[]{
+                    "org/springframework/web/bind/annotation/GetMapping.class",
+                    "org/springframework/web/bind/annotation/PostMapping.class",
+                    "web/MyController.class"}) {
+                jos.putNextEntry(new java.util.jar.JarEntry(n));
+                java.nio.file.Path p = n.endsWith("GetMapping.class") ? getAnno.getParent().resolve("GetMapping.class") :
+                        n.endsWith("PostMapping.class") ? postAnno.getParent().resolve("PostMapping.class") : pkg.resolve("MyController.class");
+                java.nio.file.Files.copy(p, jos);
+                jos.closeEntry();
+            }
+        }
+
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            Driver driver = db.getDriver();
+            JarImporter.importJar(jar, driver);
+
+            QueryService service = new QueryServiceImpl(driver);
+            java.util.List<String> get = service.findHttpEndpoints("/foo", "GET");
+            if (get.size() != 1 || !get.get(0).contains("foo()V")) {
+                throw new AssertionError("Unexpected GET result: " + get);
+            }
+
+            java.util.List<String> post = service.findHttpEndpoints("/bar", "POST");
+            if (post.size() != 1 || !post.get(0).contains("bar()V")) {
+                throw new AssertionError("Unexpected POST result: " + post);
+            }
+        }
+    }
 }

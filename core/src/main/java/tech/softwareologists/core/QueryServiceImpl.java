@@ -94,4 +94,15 @@ public class QueryServiceImpl implements QueryService {
                     .list(r -> r.get("name").asString());
         }
     }
+
+    @Override
+    public List<String> findHttpEndpoints(String basePath, String httpMethod) {
+        try (Session session = driver.session()) {
+            String query =
+                    "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.httpRoute STARTS WITH $base " +
+                            "AND m.httpMethod = $verb RETURN m.class + '|' + m.signature AS ep";
+            return session.run(query, Values.parameters("base", basePath, "verb", httpMethod))
+                    .list(r -> r.get("ep").asString());
+        }
+    }
 }

@@ -51,6 +51,11 @@ public class StdioMcpServerTest {
             public java.util.List<String> searchByAnnotation(String annotation, String targetType) {
                 return java.util.Collections.emptyList();
             }
+
+            @Override
+            public java.util.List<String> findHttpEndpoints(String basePath, String httpMethod) {
+                return java.util.Collections.emptyList();
+            }
         };
         new StdioMcpServer(qs, in, new PrintStream(out)).run();
 
