@@ -55,9 +55,19 @@ public class JarImporter {
                                 "MERGE (c:" + NodeLabel.CLASS + " {name:$name})",
                                 Values.parameters("name", cls));
 
+                        // record annotations on the class
+                        java.util.List<String> annos = new java.util.ArrayList<>();
+                        classInfo.getAnnotationInfo().forEach(a -> annos.add(a.getName()));
+                        if (!annos.isEmpty()) {
+                            session.run(
+                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}) SET c.annotations=$annos",
+                                    Values.parameters("cls", cls, "annos", annos));
+                        }
+
                         // parse bytecode to create method nodes and call edges
                         List<String> methodNames = new java.util.ArrayList<>();
                         Map<String, Set<String>> calls = new HashMap<>();
+                        Map<String, java.util.List<String>> methodAnnos = new HashMap<>();
                         try (java.io.InputStream in = classInfo.getResource().open()) {
                             ClassReader cr = new ClassReader(in);
                             cr.accept(new ClassVisitor(Opcodes.ASM9) {
@@ -69,6 +79,12 @@ public class JarImporter {
                                             "MERGE (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig})",
                                             Values.parameters("cls", cls, "sig", sig));
                                     return new MethodVisitor(Opcodes.ASM9) {
+                                        @Override
+                                        public org.objectweb.asm.AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+                                            String ann = org.objectweb.asm.Type.getType(descriptor).getClassName();
+                                            methodAnnos.computeIfAbsent(sig, k -> new java.util.ArrayList<>()).add(ann);
+                                            return super.visitAnnotation(descriptor, visible);
+                                        }
                                         @Override
                                         public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
                                             String tgtCls = owner.replace('/', '.');
@@ -82,6 +98,12 @@ public class JarImporter {
                         }
                         if (!methodNames.isEmpty()) {
                             LOGGER.info("Methods in " + cls + ": " + methodNames);
+                        }
+
+                        for (Map.Entry<String, java.util.List<String>> ma : methodAnnos.entrySet()) {
+                            session.run(
+                                    "MATCH (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig}) SET m.annotations=$annos",
+                                    Values.parameters("cls", cls, "sig", ma.getKey(), "annos", ma.getValue()));
                         }
 
                         for (Map.Entry<String, Set<String>> entry : calls.entrySet()) {

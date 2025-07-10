@@ -21,5 +21,11 @@ public class ManifestGeneratorTest {
         if (!manifest.contains("findMethodsCallingMethod")) {
             throw new AssertionError("Manifest missing findMethodsCallingMethod capability: " + manifest);
         }
+        if (!manifest.contains("findBeansWithAnnotation")) {
+            throw new AssertionError("Manifest missing findBeansWithAnnotation capability: " + manifest);
+        }
+        if (!manifest.contains("searchByAnnotation")) {
+            throw new AssertionError("Manifest missing searchByAnnotation capability: " + manifest);
+        }
     }
 }
