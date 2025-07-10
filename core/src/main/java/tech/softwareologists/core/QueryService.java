@@ -76,4 +76,12 @@ public interface QueryService {
      * @return list of "class|signature|cron" entries
      */
     List<String> findScheduledTasks();
+
+    /**
+     * Find classes or methods that reference the given configuration property key.
+     *
+     * @param propertyKey configuration property key
+     * @return list of class names or "class|signature" for methods
+     */
+    List<String> findConfigPropertyUsage(String propertyKey);
 }

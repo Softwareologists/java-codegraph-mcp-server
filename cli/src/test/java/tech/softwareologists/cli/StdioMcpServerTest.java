@@ -71,6 +71,11 @@ public class StdioMcpServerTest {
             public java.util.List<String> findScheduledTasks() {
                 return java.util.Collections.emptyList();
             }
+
+            @Override
+            public java.util.List<String> findConfigPropertyUsage(String propertyKey) {
+                return java.util.Collections.emptyList();
+            }
         };
         new StdioMcpServer(qs, in, new PrintStream(out)).run();
 

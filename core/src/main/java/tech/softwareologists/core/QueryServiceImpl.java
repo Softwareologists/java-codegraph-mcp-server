@@ -137,4 +137,15 @@ public class QueryServiceImpl implements QueryService {
                     .list(r -> r.get("m").asString());
         }
     }
+
+    @Override
+    public List<String> findConfigPropertyUsage(String propertyKey) {
+        try (Session session = driver.session()) {
+            String query =
+                    "MATCH (c:" + NodeLabel.CLASS + ") WHERE $key IN c.configProperties RETURN c.name AS loc " +
+                            "UNION MATCH (m:" + NodeLabel.METHOD + ") WHERE $key IN m.configProperties RETURN m.class + '|' + m.signature AS loc";
+            return session.run(query, Values.parameters("key", propertyKey))
+                    .list(r -> r.get("loc").asString());
+        }
+    }
 }
