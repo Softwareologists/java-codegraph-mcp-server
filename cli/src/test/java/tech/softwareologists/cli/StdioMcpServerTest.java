@@ -41,6 +41,16 @@ public class StdioMcpServerTest {
             public java.util.List<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit) {
                 return java.util.Collections.emptyList();
             }
+
+            @Override
+            public java.util.List<String> findBeansWithAnnotation(String annotation) {
+                return java.util.Collections.emptyList();
+            }
+
+            @Override
+            public java.util.List<String> searchByAnnotation(String annotation, String targetType) {
+                return java.util.Collections.emptyList();
+            }
         };
         new StdioMcpServer(qs, in, new PrintStream(out)).run();
 

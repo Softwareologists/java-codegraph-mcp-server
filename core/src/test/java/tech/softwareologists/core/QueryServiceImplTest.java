@@ -232,4 +232,50 @@ public class QueryServiceImplTest {
             }
         }
     }
+
+    @Test
+    public void annotationQueries_afterImport_returnAnnotatedElements() throws Exception {
+        java.nio.file.Path src = java.nio.file.Files.createTempDirectory("annsrc");
+        java.nio.file.Path pkg = src.resolve("ann");
+        java.nio.file.Files.createDirectories(pkg);
+        java.nio.file.Path anno = pkg.resolve("MyAnno.java");
+        java.nio.file.Files.write(anno,
+                "package ann; public @interface MyAnno {}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        java.nio.file.Path cls = pkg.resolve("AnnoClass.java");
+        java.nio.file.Files.write(cls,
+                "package ann; @MyAnno public class AnnoClass {}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        java.nio.file.Path meth = pkg.resolve("MethodClass.java");
+        java.nio.file.Files.write(meth,
+                "package ann; public class MethodClass { @MyAnno public void foo(){} }".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) throw new IllegalStateException("Java compiler not available");
+        int res = compiler.run(null, null, null, anno.toString(), cls.toString(), meth.toString());
+        if (res != 0) throw new IllegalStateException("Compilation failed");
+
+        java.io.File jar = java.io.File.createTempFile("ann", ".jar");
+        try (java.util.jar.JarOutputStream jos = new java.util.jar.JarOutputStream(new java.io.FileOutputStream(jar))) {
+            for (String n : new String[]{"ann/MyAnno.class", "ann/AnnoClass.class", "ann/MethodClass.class"}) {
+                jos.putNextEntry(new java.util.jar.JarEntry(n));
+                java.nio.file.Files.copy(pkg.resolve(n.substring(n.lastIndexOf('/') + 1)), jos);
+                jos.closeEntry();
+            }
+        }
+
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            Driver driver = db.getDriver();
+            JarImporter.importJar(jar, driver);
+
+            QueryService service = new QueryServiceImpl(driver);
+            java.util.List<String> classes = service.findBeansWithAnnotation("ann.MyAnno");
+            if (classes.size() != 1 || !classes.get(0).equals("ann.AnnoClass")) {
+                throw new AssertionError("Unexpected classes: " + classes);
+            }
+
+            java.util.List<String> methods = service.searchByAnnotation("ann.MyAnno", "method");
+            if (methods.size() != 1 || !methods.get(0).equals("foo()V")) {
+                throw new AssertionError("Unexpected methods: " + methods);
+            }
+        }
+    }
 }

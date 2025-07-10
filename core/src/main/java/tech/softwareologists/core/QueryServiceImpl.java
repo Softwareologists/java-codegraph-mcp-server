@@ -75,4 +75,23 @@ public class QueryServiceImpl implements QueryService {
                     .list(r -> r.get("sig").asString());
         }
     }
+
+    @Override
+    public List<String> findBeansWithAnnotation(String annotation) {
+        return searchByAnnotation(annotation, "class");
+    }
+
+    @Override
+    public List<String> searchByAnnotation(String annotation, String targetType) {
+        try (Session session = driver.session()) {
+            boolean method = "method".equalsIgnoreCase(targetType);
+            String label = method ? NodeLabel.METHOD.toString() : NodeLabel.CLASS.toString();
+            String returnProp = method ? "signature" : "name";
+            String query =
+                    "MATCH (n:" + label + ") WHERE ANY(a IN n.annotations WHERE a = $ann) " +
+                            "RETURN n." + returnProp + " AS name";
+            return session.run(query, Values.parameters("ann", annotation))
+                    .list(r -> r.get("name").asString());
+        }
+    }
 }

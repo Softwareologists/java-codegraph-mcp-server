@@ -27,4 +27,21 @@ public interface QueryService {
      * @return list of caller method signatures
      */
     List<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit);
+
+    /**
+     * Find classes annotated with the given annotation.
+     *
+     * @param annotation fully qualified annotation name
+     * @return list of class names
+     */
+    List<String> findBeansWithAnnotation(String annotation);
+
+    /**
+     * Generic search for nodes annotated with the given annotation.
+     *
+     * @param annotation fully qualified annotation name
+     * @param targetType "class" or "method" to indicate target node label
+     * @return list of class names or method signatures
+     */
+    List<String> searchByAnnotation(String annotation, String targetType);
 }
