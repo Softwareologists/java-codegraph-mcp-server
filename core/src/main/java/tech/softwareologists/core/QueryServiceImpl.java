@@ -61,6 +61,25 @@ public class QueryServiceImpl implements QueryService {
     }
 
     @Override
+    public List<String> findPathBetweenClasses(String fromClass, String toClass, Integer maxDepth) {
+        try (Session session = driver.session()) {
+            String query = "MATCH p=shortestPath((s:" + NodeLabel.CLASS + " {name:$from})-[:DEPENDS_ON*]->(t:" + NodeLabel.CLASS + " {name:$to})) " +
+                    "RETURN [n IN nodes(p) | n.name] AS path";
+            List<List<String>> paths = session.run(query,
+                            Values.parameters("from", fromClass, "to", toClass))
+                    .list(r -> r.get("path").asList(v -> v.asString()));
+            if (paths.isEmpty()) {
+                return java.util.Collections.emptyList();
+            }
+            List<String> result = paths.get(0);
+            if (maxDepth != null && result.size() - 1 > maxDepth) {
+                return java.util.Collections.emptyList();
+            }
+            return result;
+        }
+    }
+
+    @Override
     public List<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit) {
         try (Session session = driver.session()) {
             String query =
