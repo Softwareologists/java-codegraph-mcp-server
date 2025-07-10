@@ -1,0 +1,45 @@
+name: Update Milestones on Push
+
+on:
+  push:
+    branches:
+      - main   # or whichever branch you Pages-publish from
+
+jobs:
+  update-milestones:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0     # so we can commit back
+
+      - name: Fetch Milestones from GitHub
+        uses: actions/github-script@v6
+        id: get-ms
+        with:
+          script: |
+            const mils = await github.rest.issues.listMilestones({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "all",        // or "open"/"closed"
+              sort: "due_on",
+              direction: "asc"
+            });
+            // Write out only the fields you care about:
+            return mils.data.map(m => ({
+              title:     m.title,
+              number:    m.number,
+              open_issues: m.open_issues,
+              issues:      m.issues,
+              due_on:      m.due_on
+            }));
+      - name: Write `_data/milestones.json`
+        run: |
+          echo "${{ toJson(steps.get-ms.outputs.result) }}" > _data/milestones.json
+
+      - name: Commit & Push updated data
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "chore: update milestones data"
+          file_pattern: "_data/milestones.json"
+
