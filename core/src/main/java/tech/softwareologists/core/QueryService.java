@@ -44,4 +44,13 @@ public interface QueryService {
      * @return list of class names or method signatures
      */
     List<String> searchByAnnotation(String annotation, String targetType);
+
+    /**
+     * Find HTTP endpoint methods matching the given path prefix and verb.
+     *
+     * @param basePath base path to match against the stored route
+     * @param httpMethod HTTP verb such as GET or POST
+     * @return list of "class|signature" pairs
+     */
+    List<String> findHttpEndpoints(String basePath, String httpMethod);
 }

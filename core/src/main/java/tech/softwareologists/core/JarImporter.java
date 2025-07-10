@@ -20,12 +20,25 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import org.objectweb.asm.AnnotationVisitor;
 
 /**
  * Utility class to import JAR files into the core engine.
  */
 public class JarImporter {
     private static final Logger LOGGER = Logger.getLogger(JarImporter.class.getName());
+
+    private static final java.util.Map<String, String> MAPPING_VERBS = java.util.Map.of(
+            "org.springframework.web.bind.annotation.GetMapping", "GET",
+            "org.springframework.web.bind.annotation.PostMapping", "POST",
+            "org.springframework.web.bind.annotation.PutMapping", "PUT",
+            "org.springframework.web.bind.annotation.DeleteMapping", "DELETE",
+            "org.springframework.web.bind.annotation.PatchMapping", "PATCH"
+    );
+    private static final String REQUEST_MAPPING =
+            "org.springframework.web.bind.annotation.RequestMapping";
 
     private JarImporter() {
         // utility class
@@ -68,6 +81,8 @@ public class JarImporter {
                         List<String> methodNames = new java.util.ArrayList<>();
                         Map<String, Set<String>> calls = new HashMap<>();
                         Map<String, java.util.List<String>> methodAnnos = new HashMap<>();
+                        Map<String, String> methodRoutes = new HashMap<>();
+                        Map<String, String> methodVerbs = new HashMap<>();
                         try (java.io.InputStream in = classInfo.getResource().open()) {
                             ClassReader cr = new ClassReader(in);
                             cr.accept(new ClassVisitor(Opcodes.ASM9) {
@@ -80,10 +95,75 @@ public class JarImporter {
                                             Values.parameters("cls", cls, "sig", sig));
                                     return new MethodVisitor(Opcodes.ASM9) {
                                         @Override
-                                        public org.objectweb.asm.AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+                                        public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
                                             String ann = org.objectweb.asm.Type.getType(descriptor).getClassName();
                                             methodAnnos.computeIfAbsent(sig, k -> new java.util.ArrayList<>()).add(ann);
-                                            return super.visitAnnotation(descriptor, visible);
+                                            AnnotationVisitor parent = super.visitAnnotation(descriptor, visible);
+                                            if (MAPPING_VERBS.containsKey(ann) || REQUEST_MAPPING.equals(ann)) {
+                                                return new AnnotationVisitor(Opcodes.ASM9, parent) {
+                                                    String route = null;
+                                                    String verb = MAPPING_VERBS.get(ann);
+
+                                                    @Override
+                                                    public void visit(String name, Object value) {
+                                                        if (("value".equals(name) || "path".equals(name)) && value instanceof String) {
+                                                            route = (String) value;
+                                                        }
+                                                    }
+
+                                                    @Override
+                                                    public AnnotationVisitor visitArray(String name) {
+                                                        if ("value".equals(name) || "path".equals(name)) {
+                                                            return new AnnotationVisitor(Opcodes.ASM9) {
+                                                                String first = null;
+
+                                                                @Override
+                                                                public void visit(String n, Object v) {
+                                                                    if (v instanceof String && first == null) {
+                                                                        first = (String) v;
+                                                                    }
+                                                                }
+
+                                                                @Override
+                                                                public void visitEnd() {
+                                                                    if (first != null) {
+                                                                        route = first;
+                                                                    }
+                                                                }
+                                                            };
+                                                        } else if ("method".equals(name)) {
+                                                            return new AnnotationVisitor(Opcodes.ASM9) {
+                                                                @Override
+                                                                public void visitEnum(String n, String desc, String value) {
+                                                                    if (verb == null) {
+                                                                        verb = value;
+                                                                    }
+                                                                }
+                                                            };
+                                                        }
+                                                        return super.visitArray(name);
+                                                    }
+
+                                                    @Override
+                                                    public void visitEnum(String name, String descriptor, String value) {
+                                                        if ("method".equals(name)) {
+                                                            verb = value;
+                                                        }
+                                                    }
+
+                                                    @Override
+                                                    public void visitEnd() {
+                                                        if (route != null) {
+                                                            methodRoutes.put(sig, route);
+                                                        }
+                                                        if (verb != null) {
+                                                            methodVerbs.put(sig, verb);
+                                                        }
+                                                        super.visitEnd();
+                                                    }
+                                                };
+                                            }
+                                            return parent;
                                         }
                                         @Override
                                         public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
@@ -104,6 +184,18 @@ public class JarImporter {
                             session.run(
                                     "MATCH (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig}) SET m.annotations=$annos",
                                     Values.parameters("cls", cls, "sig", ma.getKey(), "annos", ma.getValue()));
+                        }
+
+                        for (Map.Entry<String, String> en : methodRoutes.entrySet()) {
+                            session.run(
+                                    "MATCH (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig}) SET m.httpRoute=$route",
+                                    Values.parameters("cls", cls, "sig", en.getKey(), "route", en.getValue()));
+                        }
+
+                        for (Map.Entry<String, String> en : methodVerbs.entrySet()) {
+                            session.run(
+                                    "MATCH (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig}) SET m.httpMethod=$verb",
+                                    Values.parameters("cls", cls, "sig", en.getKey(), "verb", en.getValue()));
                         }
 
                         for (Map.Entry<String, Set<String>> entry : calls.entrySet()) {
