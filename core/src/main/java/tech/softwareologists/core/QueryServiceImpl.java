@@ -244,4 +244,41 @@ public class QueryServiceImpl implements QueryService {
             return toJson.apply(root);
         }
     }
+
+    @Override
+    public String getGraphStatistics(Integer topN) {
+        int limit = topN == null ? 10 : topN;
+        try (Session session = driver.session()) {
+            long nodeCount = session.run("MATCH (n) RETURN count(n) AS c")
+                    .single()
+                    .get("c").asLong();
+            long edgeCount = session.run("MATCH ()-[r]->() RETURN count(r) AS c")
+                    .single()
+                    .get("c").asLong();
+
+            var top = session.run(
+                            "MATCH (c:" + NodeLabel.CLASS + ") " +
+                                    "RETURN c.name AS name, count{ (c)--() } AS d " +
+                                    "ORDER BY d DESC, name LIMIT $limit",
+                            Values.parameters("limit", limit))
+                    .list(r -> new String[]{r.get("name").asString(), String.valueOf(r.get("d").asInt())});
+
+            StringBuilder sb = new StringBuilder();
+            sb.append('{');
+            sb.append("\"nodes\":").append(nodeCount).append(',');
+            sb.append("\"edges\":").append(edgeCount).append(',');
+            sb.append("\"topClasses\":[");
+            for (int i = 0; i < top.size(); i++) {
+                String[] t = top.get(i);
+                if (i > 0) sb.append(',');
+                sb.append('{')
+                        .append("\"name\":\"").append(t[0]).append("\",")
+                        .append("\"degree\":").append(t[1])
+                        .append('}');
+            }
+            sb.append(']');
+            sb.append('}');
+            return sb.toString();
+        }
+    }
 }
