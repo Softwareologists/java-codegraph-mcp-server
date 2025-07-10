@@ -70,6 +70,11 @@ public class HttpMcpServerTest {
             public java.util.List<String> findScheduledTasks() {
                 return Collections.emptyList();
             }
+
+            @Override
+            public java.util.List<String> findConfigPropertyUsage(String propertyKey) {
+                return java.util.Collections.emptyList();
+            }
         };
         HttpMcpServer server = new HttpMcpServer(0, qs);
         server.start();

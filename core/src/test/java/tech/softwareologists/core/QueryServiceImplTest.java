@@ -505,4 +505,72 @@ public class QueryServiceImplTest {
             }
         }
     }
+
+    @Test
+    public void configPropertyUsage_importAndQuery_returnsLocations() throws Exception {
+        java.nio.file.Path src = java.nio.file.Files.createTempDirectory("cfgsrc");
+        java.nio.file.Path pkg = src.resolve("cfg");
+        java.nio.file.Files.createDirectories(pkg);
+
+        java.nio.file.Path valueAnno = pkg.resolveSibling("org/springframework/beans/factory/annotation/Value.java");
+        java.nio.file.Files.createDirectories(valueAnno.getParent());
+        java.nio.file.Files.write(valueAnno,
+                ("package org.springframework.beans.factory.annotation;" +
+                        "@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)" +
+                        "@java.lang.annotation.Target({java.lang.annotation.ElementType.FIELD,java.lang.annotation.ElementType.PARAMETER})" +
+                        "public @interface Value { String value(); }").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        java.nio.file.Path confAnno = pkg.resolveSibling("org/example/ConfigurationProperty.java");
+        java.nio.file.Files.createDirectories(confAnno.getParent());
+        java.nio.file.Files.write(confAnno,
+                ("package org.example;" +
+                        "@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)" +
+                        "@java.lang.annotation.Target({java.lang.annotation.ElementType.FIELD,java.lang.annotation.ElementType.PARAMETER})" +
+                        "public @interface ConfigurationProperty { String value(); }").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        java.nio.file.Path cls = pkg.resolve("MyClass.java");
+        java.nio.file.Files.write(cls,
+                ("package cfg;" +
+                        "import org.springframework.beans.factory.annotation.Value;" +
+                        "import org.example.ConfigurationProperty;" +
+                        "public class MyClass {" +
+                        "  @Value(\"${app.url}\") String url;" +
+                        "  public void set(@ConfigurationProperty(\"app.timeout\") int t) {}" +
+                        "}").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) throw new IllegalStateException("Java compiler not available");
+        int res = compiler.run(null, null, null, valueAnno.toString(), confAnno.toString(), cls.toString());
+        if (res != 0) throw new IllegalStateException("Compilation failed");
+
+        java.io.File jar = java.io.File.createTempFile("cfg", ".jar");
+        try (java.util.jar.JarOutputStream jos = new java.util.jar.JarOutputStream(new java.io.FileOutputStream(jar))) {
+            for (String n : new String[]{
+                    "org/springframework/beans/factory/annotation/Value.class",
+                    "org/example/ConfigurationProperty.class",
+                    "cfg/MyClass.class"}) {
+                jos.putNextEntry(new java.util.jar.JarEntry(n));
+                java.nio.file.Path p = n.contains("Value.class") ? valueAnno.getParent().resolve("Value.class") :
+                        n.contains("ConfigurationProperty.class") ? confAnno.getParent().resolve("ConfigurationProperty.class") :
+                                pkg.resolve("MyClass.class");
+                java.nio.file.Files.copy(p, jos);
+                jos.closeEntry();
+            }
+        }
+
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            org.neo4j.driver.Driver driver = db.getDriver();
+            JarImporter.importJar(jar, driver);
+
+            QueryService svc = new QueryServiceImpl(driver);
+            java.util.List<String> clsRes = svc.findConfigPropertyUsage("app.url");
+            if (clsRes.size() != 1 || !clsRes.get(0).equals("cfg.MyClass")) {
+                throw new AssertionError("Unexpected class usage: " + clsRes);
+            }
+            java.util.List<String> methRes = svc.findConfigPropertyUsage("app.timeout");
+            if (methRes.size() != 1 || !methRes.get(0).equals("cfg.MyClass|set(I)V")) {
+                throw new AssertionError("Unexpected method usage: " + methRes);
+            }
+        }
+    }
 }

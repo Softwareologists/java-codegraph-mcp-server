@@ -88,6 +88,8 @@ public class JarImporter {
                         Map<String, String> eventTypes = new HashMap<>();
                         Map<String, String> cronExprs = new HashMap<>();
                         Set<String> usesDeps = new HashSet<>();
+                        java.util.List<String> classConfigProps = new java.util.ArrayList<>();
+                        Map<String, java.util.List<String>> methodConfigProps = new java.util.HashMap<>();
                         try (java.io.InputStream in = classInfo.getResource().open()) {
                             ClassReader cr = new ClassReader(in);
                             cr.accept(new ClassVisitor(Opcodes.ASM9) {
@@ -95,6 +97,7 @@ public class JarImporter {
                                 public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
                                     return new FieldVisitor(Opcodes.ASM9) {
                                         boolean autowired = false;
+                                        String configKey = null;
 
                                         @Override
                                         public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
@@ -102,7 +105,32 @@ public class JarImporter {
                                             if ("org.springframework.beans.factory.annotation.Autowired".equals(ann)) {
                                                 autowired = true;
                                             }
-                                            return super.visitAnnotation(desc, visible);
+                                            AnnotationVisitor parent = super.visitAnnotation(desc, visible);
+                                            if (ann.endsWith(".Value") || ann.endsWith(".ConfigurationProperty")) {
+                                                return new AnnotationVisitor(Opcodes.ASM9, parent) {
+                                                    @Override
+                                                    public void visit(String name, Object value) {
+                                                        if (value instanceof String && (name == null || "value".equals(name) || "name".equals(name))) {
+                                                            String v = (String) value;
+                                                            if (v.startsWith("${") && v.endsWith("}")) {
+                                                                v = v.substring(2, v.length() - 1);
+                                                                int idx = v.indexOf(':');
+                                                                if (idx > -1) v = v.substring(0, idx);
+                                                            }
+                                                            configKey = v;
+                                                        }
+                                                    }
+
+                                                    @Override
+                                                    public void visitEnd() {
+                                                        if (configKey != null) {
+                                                            classConfigProps.add(configKey);
+                                                        }
+                                                        super.visitEnd();
+                                                    }
+                                                };
+                                            }
+                                            return parent;
                                         }
 
                                         @Override
@@ -128,7 +156,41 @@ public class JarImporter {
                                     session.run(
                                             "MERGE (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig})",
                                             Values.parameters("cls", cls, "sig", sig));
+                                    java.util.List<String> mprops = new java.util.ArrayList<>();
+                                    methodConfigProps.put(sig, mprops);
                                     return new MethodVisitor(Opcodes.ASM9) {
+                                        @Override
+                                        public AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor, boolean visible) {
+                                            String ann = Type.getType(descriptor).getClassName();
+                                            AnnotationVisitor parent = super.visitParameterAnnotation(parameter, descriptor, visible);
+                                            if (ann.endsWith(".Value") || ann.endsWith(".ConfigurationProperty")) {
+                                                return new AnnotationVisitor(Opcodes.ASM9, parent) {
+                                                    String key = null;
+
+                                                    @Override
+                                                    public void visit(String name, Object value) {
+                                                        if (value instanceof String && (name == null || "value".equals(name) || "name".equals(name))) {
+                                                            String v = (String) value;
+                                                            if (v.startsWith("${") && v.endsWith("}")) {
+                                                                v = v.substring(2, v.length() - 1);
+                                                                int idx = v.indexOf(':');
+                                                                if (idx > -1) v = v.substring(0, idx);
+                                                            }
+                                                            key = v;
+                                                        }
+                                                    }
+
+                                                    @Override
+                                                    public void visitEnd() {
+                                                        if (key != null) {
+                                                            mprops.add(key);
+                                                        }
+                                                        super.visitEnd();
+                                                    }
+                                                };
+                                            }
+                                            return parent;
+                                        }
                                         @Override
                                         public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
                                             String ann = org.objectweb.asm.Type.getType(descriptor).getClassName();
@@ -306,6 +368,19 @@ public class JarImporter {
                             session.run(
                                     "MATCH (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig}) SET m.cron=$cron",
                                     Values.parameters("cls", cls, "sig", en.getKey(), "cron", en.getValue()));
+                        }
+
+                        if (!classConfigProps.isEmpty()) {
+                            session.run(
+                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}) SET c.configProperties=$props",
+                                    Values.parameters("cls", cls, "props", classConfigProps));
+                        }
+                        for (Map.Entry<String, java.util.List<String>> en : methodConfigProps.entrySet()) {
+                            if (!en.getValue().isEmpty()) {
+                                session.run(
+                                        "MATCH (m:" + NodeLabel.METHOD + " {class:$cls, signature:$sig}) SET m.configProperties=$props",
+                                        Values.parameters("cls", cls, "sig", en.getKey(), "props", en.getValue()));
+                            }
                         }
 
                         for (Map.Entry<String, Set<String>> entry : calls.entrySet()) {
