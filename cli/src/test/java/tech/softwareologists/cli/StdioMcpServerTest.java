@@ -31,6 +31,11 @@ public class StdioMcpServerTest {
             public java.util.List<String> findSubclasses(String className, int depth) {
                 return java.util.Collections.emptyList();
             }
+
+            @Override
+            public java.util.List<String> findDependencies(String className, Integer depth) {
+                return java.util.Collections.emptyList();
+            }
         };
         new StdioMcpServer(qs, in, new PrintStream(out)).run();
 

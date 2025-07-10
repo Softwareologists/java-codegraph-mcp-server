@@ -113,4 +113,32 @@ public class QueryServiceImplTest {
             }
         }
     }
+
+    @Test
+    public void findDependencies_chain_respectsDepth() {
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            Driver driver = db.getDriver();
+            try (Session session = driver.session()) {
+                session.run("CREATE (:" + NodeLabel.CLASS + " {name:'A'})");
+                session.run("CREATE (:" + NodeLabel.CLASS + " {name:'B'})");
+                session.run("CREATE (:" + NodeLabel.CLASS + " {name:'C'})");
+                session.run("MATCH (a:" + NodeLabel.CLASS + " {name:'A'}), (b:" + NodeLabel.CLASS + " {name:'B'}) CREATE (a)-[:DEPENDS_ON]->(b)");
+                session.run("MATCH (b:" + NodeLabel.CLASS + " {name:'B'}), (c:" + NodeLabel.CLASS + " {name:'C'}) CREATE (b)-[:DEPENDS_ON]->(c)");
+            }
+
+            QueryService service = new QueryServiceImpl(driver);
+            List<String> depth1 = service.findDependencies("A", 1);
+            if (depth1.size() != 1 || !depth1.get(0).equals("B")) {
+                throw new AssertionError("Unexpected depth1 result: " + depth1);
+            }
+
+            List<String> depth2 = service.findDependencies("A", 2);
+            java.util.Set<String> expected = new java.util.HashSet<>();
+            expected.add("B");
+            expected.add("C");
+            if (!depth2.containsAll(expected) || depth2.size() != 2) {
+                throw new AssertionError("Unexpected depth2 result: " + depth2);
+            }
+        }
+    }
 }

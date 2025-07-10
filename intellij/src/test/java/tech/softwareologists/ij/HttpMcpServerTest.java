@@ -30,6 +30,11 @@ public class HttpMcpServerTest {
             public java.util.List<String> findSubclasses(String className, int depth) {
                 return java.util.Collections.emptyList();
             }
+
+            @Override
+            public java.util.List<String> findDependencies(String className, Integer depth) {
+                return java.util.Collections.emptyList();
+            }
         };
         HttpMcpServer server = new HttpMcpServer(0, qs);
         server.start();

@@ -45,4 +45,18 @@ public class QueryServiceImpl implements QueryService {
                     .list(r -> r.get("name").asString());
         }
     }
+
+    @Override
+    public List<String> findDependencies(String className, Integer depth) {
+        try (Session session = driver.session()) {
+            String query =
+                    "MATCH (c:" + NodeLabel.CLASS + " {name:$name})-[:DEPENDS_ON*]->(dep:" + NodeLabel.CLASS + ") " +
+                            "RETURN DISTINCT dep.name AS name";
+            if (depth != null) {
+                query += " LIMIT " + depth;
+            }
+            return session.run(query, Values.parameters("name", className))
+                    .list(r -> r.get("name").asString());
+        }
+    }
 }
