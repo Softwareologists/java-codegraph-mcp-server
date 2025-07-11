@@ -91,6 +91,11 @@ public class StdioMcpServerTest {
             public String getGraphStatistics(Integer topN) {
                 return "{}";
             }
+
+            @Override
+            public void exportGraph(String format, String outputPath) {
+                // no-op for testing
+            }
         };
         new StdioMcpServer(qs, in, new PrintStream(out)).run();
 
