@@ -103,4 +103,15 @@ public interface QueryService {
      * @return nested JSON describing the package hierarchy
      */
     String getPackageHierarchy(String rootPackage, Integer depth);
+
+    /**
+     * Return basic statistics about the graph.
+     *
+     * <p>The JSON response includes total node and edge counts and a list of
+     * the top connected classes sorted by degree.</p>
+     *
+     * @param topN maximum number of classes to return, or {@code null} for the default
+     * @return JSON statistics string
+     */
+    String getGraphStatistics(Integer topN);
 }
