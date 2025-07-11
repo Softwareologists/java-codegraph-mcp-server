@@ -11,6 +11,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import tech.softwareologists.core.db.NodeLabel;
+import tech.softwareologists.core.db.EdgeType;
 
 import java.io.File;
 import java.util.List;
@@ -115,7 +116,7 @@ public class ProjectDirImporter {
                                     "MERGE (d:" + NodeLabel.CLASS + " {name:$dep})",
                                     Values.parameters("dep", depName));
                             session.run(
-                                    "MATCH (s:" + NodeLabel.CLASS + " {name:$src}), (t:" + NodeLabel.CLASS + " {name:$tgt}) MERGE (s)-[:DEPENDS_ON]->(t)",
+                                    "MATCH (s:" + NodeLabel.CLASS + " {name:$src}), (t:" + NodeLabel.CLASS + " {name:$tgt}) MERGE (s)-[:" + EdgeType.DEPENDS_ON + "]->(t)",
                                     Values.parameters("src", cls, "tgt", depName));
                         }
 
@@ -130,7 +131,7 @@ public class ProjectDirImporter {
                                     "MERGE (i:" + NodeLabel.CLASS + " {name:$iface})",
                                     Values.parameters("iface", ifaceName));
                             session.run(
-                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}), (i:" + NodeLabel.CLASS + " {name:$iface}) MERGE (c)-[:IMPLEMENTS]->(i)",
+                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}), (i:" + NodeLabel.CLASS + " {name:$iface}) MERGE (c)-[:" + EdgeType.IMPLEMENTS + "]->(i)",
                                     Values.parameters("cls", cls, "iface", ifaceName));
                         }
 
@@ -142,7 +143,7 @@ public class ProjectDirImporter {
                                     "MERGE (s:" + NodeLabel.CLASS + " {name:$sup})",
                                     Values.parameters("sup", superName));
                             session.run(
-                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}), (s:" + NodeLabel.CLASS + " {name:$sup}) MERGE (c)-[:EXTENDS]->(s)",
+                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}), (s:" + NodeLabel.CLASS + " {name:$sup}) MERGE (c)-[:" + EdgeType.EXTENDS + "]->(s)",
                                     Values.parameters("cls", cls, "sup", superName));
                         }
                     }

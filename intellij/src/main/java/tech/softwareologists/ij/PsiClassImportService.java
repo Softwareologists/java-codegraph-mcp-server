@@ -12,6 +12,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Values;
 import tech.softwareologists.core.db.NodeLabel;
+import tech.softwareologists.core.db.EdgeType;
 
 import java.util.Collection;
 
@@ -113,7 +114,7 @@ public class PsiClassImportService {
         session.run("MERGE (d:" + NodeLabel.CLASS + " {name:$dep})",
                 Values.parameters("dep", depName));
         session.run("MATCH (s:" + NodeLabel.CLASS + " {name:$src}), (t:" + NodeLabel.CLASS +
-                        " {name:$tgt}) MERGE (s)-[:DEPENDS_ON]->(t)",
+                        " {name:$tgt}) MERGE (s)-[:" + EdgeType.DEPENDS_ON + "]->(t)",
                 Values.parameters("src", src, "tgt", depName));
     }
 }

@@ -4,6 +4,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Values;
 import tech.softwareologists.core.db.NodeLabel;
+import tech.softwareologists.core.db.EdgeType;
 
 import java.util.List;
 
@@ -21,7 +22,7 @@ public class QueryServiceImpl implements QueryService {
     public List<String> findCallers(String className) {
         try (Session session = driver.session()) {
             return session.run(
-                    "MATCH (c:" + NodeLabel.CLASS + ")-[:DEPENDS_ON]->(t:" + NodeLabel.CLASS + " {name:$name}) RETURN c.name AS name",
+                    "MATCH (c:" + NodeLabel.CLASS + ")-[:" + EdgeType.DEPENDS_ON + "]->(t:" + NodeLabel.CLASS + " {name:$name}) RETURN c.name AS name",
                     Values.parameters("name", className))
                     .list(r -> r.get("name").asString());
         }
@@ -31,7 +32,7 @@ public class QueryServiceImpl implements QueryService {
     public List<String> findImplementations(String interfaceName) {
         try (Session session = driver.session()) {
             return session.run(
-                            "MATCH (c:" + NodeLabel.CLASS + ")-[:IMPLEMENTS]->(i:" + NodeLabel.CLASS + " {name:$name}) RETURN c.name AS name",
+                            "MATCH (c:" + NodeLabel.CLASS + ")-[:" + EdgeType.IMPLEMENTS + "]->(i:" + NodeLabel.CLASS + " {name:$name}) RETURN c.name AS name",
                             Values.parameters("name", interfaceName))
                     .list(r -> r.get("name").asString());
         }
@@ -40,7 +41,7 @@ public class QueryServiceImpl implements QueryService {
     @Override
     public List<String> findSubclasses(String className, int depth) {
         try (Session session = driver.session()) {
-            String query = "MATCH (sub:" + NodeLabel.CLASS + ")-[:EXTENDS*1.." + depth + "]->(sup:" + NodeLabel.CLASS + " {name:$name}) RETURN DISTINCT sub.name AS name";
+            String query = "MATCH (sub:" + NodeLabel.CLASS + ")-[:" + EdgeType.EXTENDS + "*1.." + depth + "]->(sup:" + NodeLabel.CLASS + " {name:$name}) RETURN DISTINCT sub.name AS name";
             return session.run(query, Values.parameters("name", className))
                     .list(r -> r.get("name").asString());
         }
@@ -50,7 +51,7 @@ public class QueryServiceImpl implements QueryService {
     public List<String> findDependencies(String className, Integer depth) {
         try (Session session = driver.session()) {
             String query =
-                    "MATCH (c:" + NodeLabel.CLASS + " {name:$name})-[:DEPENDS_ON*]->(dep:" + NodeLabel.CLASS + ") " +
+                    "MATCH (c:" + NodeLabel.CLASS + " {name:$name})-[:" + EdgeType.DEPENDS_ON + "*]->(dep:" + NodeLabel.CLASS + ") " +
                             "RETURN DISTINCT dep.name AS name";
             if (depth != null) {
                 query += " LIMIT " + depth;
@@ -63,7 +64,7 @@ public class QueryServiceImpl implements QueryService {
     @Override
     public List<String> findPathBetweenClasses(String fromClass, String toClass, Integer maxDepth) {
         try (Session session = driver.session()) {
-            String query = "MATCH p=shortestPath((s:" + NodeLabel.CLASS + " {name:$from})-[:DEPENDS_ON*]->(t:" + NodeLabel.CLASS + " {name:$to})) " +
+            String query = "MATCH p=shortestPath((s:" + NodeLabel.CLASS + " {name:$from})-[:" + EdgeType.DEPENDS_ON + "*]->(t:" + NodeLabel.CLASS + " {name:$to})) " +
                     "RETURN [n IN nodes(p) | n.name] AS path";
             List<List<String>> paths = session.run(query,
                             Values.parameters("from", fromClass, "to", toClass))
@@ -129,7 +130,7 @@ public class QueryServiceImpl implements QueryService {
     public List<String> findControllersUsingService(String serviceClassName) {
         try (Session session = driver.session()) {
             String query =
-                    "MATCH (svc:" + NodeLabel.CLASS + " {name:$svc})<-[:USES]-(c:" + NodeLabel.CLASS + ") " +
+                    "MATCH (svc:" + NodeLabel.CLASS + " {name:$svc})<-[:" + EdgeType.USES + "]-(c:" + NodeLabel.CLASS + ") " +
                             "WHERE ANY(a IN c.annotations WHERE a IN ['org.springframework.stereotype.Controller','org.springframework.web.bind.annotation.RestController']) " +
                             "RETURN c.name AS name";
             return session.run(query, Values.parameters("svc", serviceClassName))
