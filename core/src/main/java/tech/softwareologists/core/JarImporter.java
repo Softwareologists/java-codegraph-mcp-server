@@ -14,6 +14,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Values;
 import tech.softwareologists.core.db.NodeLabel;
+import tech.softwareologists.core.db.EdgeType;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
@@ -422,7 +423,7 @@ public class JarImporter {
                                     "MERGE (d:" + NodeLabel.CLASS + " {name:$dep})",
                                     Values.parameters("dep", depName));
                             session.run(
-                                    "MATCH (s:" + NodeLabel.CLASS + " {name:$src}), (t:" + NodeLabel.CLASS + " {name:$tgt}) MERGE (s)-[:DEPENDS_ON]->(t)",
+                                    "MATCH (s:" + NodeLabel.CLASS + " {name:$src}), (t:" + NodeLabel.CLASS + " {name:$tgt}) MERGE (s)-[:" + EdgeType.DEPENDS_ON + "]->(t)",
                                     Values.parameters("src", cls, "tgt", depName));
                         }
 
@@ -431,7 +432,7 @@ public class JarImporter {
                                     "MERGE (u:" + NodeLabel.CLASS + " {name:$dep})",
                                     Values.parameters("dep", use));
                             session.run(
-                                    "MATCH (s:" + NodeLabel.CLASS + " {name:$src}), (t:" + NodeLabel.CLASS + " {name:$tgt}) MERGE (s)-[:USES]->(t)",
+                                    "MATCH (s:" + NodeLabel.CLASS + " {name:$src}), (t:" + NodeLabel.CLASS + " {name:$tgt}) MERGE (s)-[:" + EdgeType.USES + "]->(t)",
                                     Values.parameters("src", cls, "tgt", use));
                         }
 
@@ -446,7 +447,7 @@ public class JarImporter {
                                     "MERGE (i:" + NodeLabel.CLASS + " {name:$iface})",
                                     Values.parameters("iface", ifaceName));
                             session.run(
-                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}), (i:" + NodeLabel.CLASS + " {name:$iface}) MERGE (c)-[:IMPLEMENTS]->(i)",
+                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}), (i:" + NodeLabel.CLASS + " {name:$iface}) MERGE (c)-[:" + EdgeType.IMPLEMENTS + "]->(i)",
                                     Values.parameters("cls", cls, "iface", ifaceName));
                         }
 
@@ -458,7 +459,7 @@ public class JarImporter {
                                     "MERGE (s:" + NodeLabel.CLASS + " {name:$sup})",
                                     Values.parameters("sup", superName));
                             session.run(
-                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}), (s:" + NodeLabel.CLASS + " {name:$sup}) MERGE (c)-[:EXTENDS]->(s)",
+                                    "MATCH (c:" + NodeLabel.CLASS + " {name:$cls}), (s:" + NodeLabel.CLASS + " {name:$sup}) MERGE (c)-[:" + EdgeType.EXTENDS + "]->(s)",
                                     Values.parameters("cls", cls, "sup", superName));
                         }
                     }
