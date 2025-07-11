@@ -85,6 +85,11 @@ public class HttpMcpServerTest {
             public String getPackageHierarchy(String rootPackage, Integer depth) {
                 return "{}";
             }
+
+            @Override
+            public String getGraphStatistics(Integer topN) {
+                return "{}";
+            }
         };
         HttpMcpServer server = new HttpMcpServer(0, qs);
         server.start();
