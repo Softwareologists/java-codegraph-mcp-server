@@ -106,5 +106,8 @@ public class StdioMcpServerTest {
         if (first == -1 || second == -1) {
             throw new AssertionError("Manifest not printed twice:\n" + output);
         }
+        if (!manifest.contains("findHttpEndpoints") || !manifest.contains("getGraphStatistics")) {
+            throw new AssertionError("Manifest missing new capabilities: " + manifest);
+        }
     }
 }

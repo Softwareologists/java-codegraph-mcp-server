@@ -52,6 +52,36 @@ public class CliIntegrationTest {
         }
     }
 
+    @Test
+    public void importAndQuery_subclassJar_returnsSubclass() throws Exception {
+        Path watch = Files.createTempDirectory("watch2");
+
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(JarWatcher.class.getName());
+        logger.setUseParentHandlers(false);
+        logger.setLevel(java.util.logging.Level.INFO);
+        ByteArrayOutputStream logOut = new ByteArrayOutputStream();
+        Handler handler = new StreamHandler(logOut, new SimpleFormatter());
+        logger.addHandler(handler);
+
+        Path jar = watch.resolve("subs.jar");
+        createSubclassJar(jar);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        InputStream originalIn = System.in;
+        String query = "{\"findSubclasses\":{\"className\":\"dep.Base\",\"depth\":1}}\n";
+        System.setIn(new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8)));
+        CliMain.run(new String[]{"--watch-dir", watch.toString(), "--stdio"}, new PrintStream(out, true));
+        System.setIn(originalIn);
+        handler.flush();
+        logger.removeHandler(handler);
+
+        String output = out.toString(StandardCharsets.UTF_8.name());
+        if (!output.contains("\"dep.Sub\"")) {
+            throw new AssertionError("Expected dep.Sub in output but was:\n" + output);
+        }
+    }
+
     private static void createSampleJar(Path jar) throws Exception {
         Path srcDir = Files.createTempDirectory("src");
         Path pkg = srcDir.resolve("dep");
@@ -74,6 +104,31 @@ public class CliIntegrationTest {
             JarEntry b = new JarEntry("dep/B.class");
             jos.putNextEntry(b);
             Files.copy(pkg.resolve("B.class"), jos);
+            jos.closeEntry();
+        }
+    }
+
+    private static void createSubclassJar(Path jar) throws Exception {
+        Path srcDir = Files.createTempDirectory("src2");
+        Path pkg = srcDir.resolve("dep");
+        Files.createDirectories(pkg);
+        Files.writeString(pkg.resolve("Base.java"), "package dep; public class Base {}" );
+        Files.writeString(pkg.resolve("Sub.java"), "package dep; public class Sub extends Base {}" );
+
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        int res = compiler.run(null, null, null, "-d", srcDir.toString(), pkg.resolve("Base.java").toString(), pkg.resolve("Sub.java").toString());
+        if (res != 0) {
+            throw new IllegalStateException("Compilation failed");
+        }
+
+        try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(jar.toFile()))) {
+            JarEntry a = new JarEntry("dep/Base.class");
+            jos.putNextEntry(a);
+            Files.copy(pkg.resolve("Base.class"), jos);
+            jos.closeEntry();
+            JarEntry b = new JarEntry("dep/Sub.class");
+            jos.putNextEntry(b);
+            Files.copy(pkg.resolve("Sub.class"), jos);
             jos.closeEntry();
         }
     }
