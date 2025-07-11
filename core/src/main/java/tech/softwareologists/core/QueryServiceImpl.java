@@ -281,4 +281,92 @@ public class QueryServiceImpl implements QueryService {
             return sb.toString();
         }
     }
+
+    @Override
+    public void exportGraph(String format, String outputPath) {
+        String upper = format == null ? "" : format.toUpperCase();
+        try (Session session = driver.session()) {
+            var nodeRecords = session.run(
+                    "MATCH (n) RETURN id(n) AS id, labels(n)[0] AS label, n.name AS name, n.class AS cls, n.signature AS sig")
+                    .list(r -> new Object[]{r.get("id").asLong(), r.get("label").asString(),
+                            r.get("name").isNull() ? null : r.get("name").asString(),
+                            r.get("cls").isNull() ? null : r.get("cls").asString(),
+                            r.get("sig").isNull() ? null : r.get("sig").asString()});
+
+            java.util.Map<Long, String> names = new java.util.HashMap<>();
+            for (Object[] arr : nodeRecords) {
+                long id = (Long) arr[0];
+                String label = (String) arr[1];
+                String name;
+                if (NodeLabel.METHOD.toString().equals(label)) {
+                    String cls = (String) arr[3];
+                    String sig = (String) arr[4];
+                    name = cls + '|' + sig;
+                } else {
+                    name = (String) arr[2];
+                }
+                names.put(id, name);
+            }
+
+            var edgeRecords = session.run(
+                    "MATCH (a)-[r]->(b) RETURN id(a) AS from, type(r) AS type, id(b) AS to")
+                    .list(r -> new Object[]{r.get("from").asLong(), r.get("type").asString(), r.get("to").asLong()});
+
+            StringBuilder sb = new StringBuilder();
+            switch (upper) {
+                case "DOT":
+                    sb.append("digraph G {");
+                    for (var e : names.entrySet()) {
+                        sb.append('\n').append("  n").append(e.getKey())
+                                .append(" [label=\"").append(e.getValue()).append("\"];");
+                    }
+                    for (Object[] edge : edgeRecords) {
+                        sb.append('\n').append("  n").append(edge[0]).append(" -> n")
+                                .append(edge[2]).append(" [label=\"")
+                                .append(edge[1]).append("\"];");
+                    }
+                    sb.append('\n').append('}');
+                    break;
+                case "CSV":
+                    sb.append("from,to,type\n");
+                    for (Object[] edge : edgeRecords) {
+                        sb.append(names.get((Long) edge[0])).append(',')
+                                .append(names.get((Long) edge[2])).append(',')
+                                .append(edge[1]).append('\n');
+                    }
+                    break;
+                case "JSON":
+                    sb.append('{');
+                    sb.append("\"nodes\":[");
+                    boolean first = true;
+                    for (var e : names.entrySet()) {
+                        if (!first) sb.append(',');
+                        first = false;
+                        sb.append('{')
+                                .append("\"id\":").append(e.getKey()).append(',')
+                                .append("\"name\":\"").append(e.getValue()).append("\"}");
+                    }
+                    sb.append("],\"edges\":[");
+                    first = true;
+                    for (Object[] edge : edgeRecords) {
+                        if (!first) sb.append(',');
+                        first = false;
+                        sb.append('{')
+                                .append("\"from\":").append(edge[0]).append(',')
+                                .append("\"to\":").append(edge[2]).append(',')
+                                .append("\"type\":\"").append(edge[1]).append("\"}");
+                    }
+                    sb.append(']');
+                    sb.append('}');
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported format: " + format);
+            }
+
+            java.nio.file.Files.write(java.nio.file.Paths.get(outputPath),
+                    sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to export graph", e);
+        }
+    }
 }

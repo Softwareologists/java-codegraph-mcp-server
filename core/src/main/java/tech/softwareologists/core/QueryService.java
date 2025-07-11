@@ -114,4 +114,16 @@ public interface QueryService {
      * @return JSON statistics string
      */
     String getGraphStatistics(Integer topN);
+
+    /**
+     * Export the entire graph to the given file in the specified format.
+     *
+     * <p>Supported formats are {@code "DOT"}, {@code "CSV"}, and {@code "JSON"}.
+     * The implementation may use Neo4j APOC procedures if available or
+     * perform custom serialization.</p>
+     *
+     * @param format one of "DOT", "CSV", or "JSON"
+     * @param outputPath file system path to write the export file
+     */
+    void exportGraph(String format, String outputPath);
 }

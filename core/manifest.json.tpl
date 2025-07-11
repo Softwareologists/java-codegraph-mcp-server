@@ -11,6 +11,7 @@
     { "name": "findBeansWithAnnotation", "params": ["annotation"] },
     { "name": "searchByAnnotation", "params": ["annotation", "targetType"] },
     { "name": "findControllersUsingService", "params": ["serviceClassName"] },
-    { "name": "getPackageHierarchy", "params": ["rootPackage", "depth"] }
+    { "name": "getPackageHierarchy", "params": ["rootPackage", "depth"] },
+    { "name": "exportGraph", "params": ["format", "outputPath"] }
   ]
 }
