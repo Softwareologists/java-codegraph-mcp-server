@@ -88,7 +88,7 @@ public class HttpMcpServerTest {
 
             @Override
             public String getGraphStatistics(Integer topN) {
-                return "{}";
+                return "{\"nodes\":1}";
             }
 
             @Override
@@ -118,6 +118,16 @@ public class HttpMcpServerTest {
         HttpResponse<String> queryResp = client.send(queryReq, HttpResponse.BodyHandlers.ofString());
         if (!queryResp.body().equals("[\"Caller\"]")) {
             throw new AssertionError("Unexpected query response: " + queryResp.body());
+        }
+
+        HttpRequest statsReq = HttpRequest.newBuilder()
+                .uri(new URI("http://localhost:" + port + "/mcp/query"))
+                .POST(HttpRequest.BodyPublishers.ofString("{\"getGraphStatistics\":1}"))
+                .header("Content-Type", "application/json")
+                .build();
+        HttpResponse<String> statsResp = client.send(statsReq, HttpResponse.BodyHandlers.ofString());
+        if (!statsResp.body().equals("{\"nodes\":1}")) {
+            throw new AssertionError("Unexpected stats response: " + statsResp.body());
         }
         server.stop();
     }
