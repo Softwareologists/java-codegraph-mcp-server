@@ -10,8 +10,13 @@
     { "name": "findMethodsCallingMethod", "params": ["className", "methodSignature", "limit"] },
     { "name": "findBeansWithAnnotation", "params": ["annotation"] },
     { "name": "searchByAnnotation", "params": ["annotation", "targetType"] },
+    { "name": "findHttpEndpoints", "params": ["basePath", "httpMethod"] },
     { "name": "findControllersUsingService", "params": ["serviceClassName"] },
+    { "name": "findEventListeners", "params": ["eventType"] },
+    { "name": "findScheduledTasks", "params": [] },
+    { "name": "findConfigPropertyUsage", "params": ["propertyKey"] },
     { "name": "getPackageHierarchy", "params": ["rootPackage", "depth"] },
+    { "name": "getGraphStatistics", "params": ["topN"] },
     { "name": "exportGraph", "params": ["format", "outputPath"] }
   ]
 }

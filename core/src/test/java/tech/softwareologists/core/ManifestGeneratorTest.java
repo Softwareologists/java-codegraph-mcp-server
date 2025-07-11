@@ -30,11 +30,29 @@ public class ManifestGeneratorTest {
         if (!manifest.contains("searchByAnnotation")) {
             throw new AssertionError("Manifest missing searchByAnnotation capability: " + manifest);
         }
+        if (!manifest.contains("findHttpEndpoints")) {
+            throw new AssertionError("Manifest missing findHttpEndpoints capability: " + manifest);
+        }
         if (!manifest.contains("findControllersUsingService")) {
             throw new AssertionError("Manifest missing findControllersUsingService capability: " + manifest);
         }
+        if (!manifest.contains("findEventListeners")) {
+            throw new AssertionError("Manifest missing findEventListeners capability: " + manifest);
+        }
+        if (!manifest.contains("findScheduledTasks")) {
+            throw new AssertionError("Manifest missing findScheduledTasks capability: " + manifest);
+        }
+        if (!manifest.contains("findConfigPropertyUsage")) {
+            throw new AssertionError("Manifest missing findConfigPropertyUsage capability: " + manifest);
+        }
         if (!manifest.contains("getPackageHierarchy")) {
             throw new AssertionError("Manifest missing getPackageHierarchy capability: " + manifest);
+        }
+        if (!manifest.contains("getGraphStatistics")) {
+            throw new AssertionError("Manifest missing getGraphStatistics capability: " + manifest);
+        }
+        if (!manifest.contains("exportGraph")) {
+            throw new AssertionError("Manifest missing exportGraph capability: " + manifest);
         }
     }
 }
