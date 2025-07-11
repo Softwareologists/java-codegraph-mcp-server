@@ -19,5 +19,6 @@ java {
 
 dependencies {
     implementation(project(":core"))
+    implementation("org.json:json:20240303")
     testImplementation(project(":core"))
 }
