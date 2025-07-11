@@ -90,6 +90,11 @@ public class HttpMcpServerTest {
             public String getGraphStatistics(Integer topN) {
                 return "{}";
             }
+
+            @Override
+            public void exportGraph(String format, String outputPath) {
+                // no-op for HTTP server tests
+            }
         };
         HttpMcpServer server = new HttpMcpServer(0, qs);
         server.start();
