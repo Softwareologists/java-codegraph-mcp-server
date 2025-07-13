@@ -5,6 +5,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Values;
 import tech.softwareologists.core.db.NodeLabel;
 import tech.softwareologists.core.db.EdgeType;
+import tech.softwareologists.core.QueryResult;
 
 import java.util.List;
 
@@ -18,37 +19,53 @@ public class QueryServiceImpl implements QueryService {
         this.driver = driver;
     }
 
+    private QueryResult<String> wrap(List<String> items, Integer limit, Integer page, Integer pageSize) {
+        int total = items.size();
+        int p = page == null ? 1 : page;
+        int ps = pageSize == null ? (limit != null ? limit : total) : pageSize;
+        int from = Math.max(0, (p - 1) * ps);
+        int to = Math.min(from + ps, total);
+        List<String> slice = from >= total ? java.util.Collections.emptyList() : new java.util.ArrayList<>(items.subList(from, to));
+        if (limit != null && slice.size() > limit) {
+            slice = slice.subList(0, limit);
+        }
+        return new QueryResult<>(slice, p, ps, total);
+    }
+
     @Override
-    public List<String> findCallers(String className) {
+    public QueryResult<String> findCallers(String className, Integer limit, Integer page, Integer pageSize) {
         try (Session session = driver.session()) {
-            return session.run(
+            List<String> res = session.run(
                     "MATCH (c:" + NodeLabel.CLASS + ")-[:" + EdgeType.DEPENDS_ON + "]->(t:" + NodeLabel.CLASS + " {name:$name}) RETURN c.name AS name",
                     Values.parameters("name", className))
                     .list(r -> r.get("name").asString());
+            return wrap(res, limit, page, pageSize);
         }
     }
 
     @Override
-    public List<String> findImplementations(String interfaceName) {
+    public QueryResult<String> findImplementations(String interfaceName, Integer limit, Integer page, Integer pageSize) {
         try (Session session = driver.session()) {
-            return session.run(
+            List<String> res = session.run(
                             "MATCH (c:" + NodeLabel.CLASS + ")-[:" + EdgeType.IMPLEMENTS + "]->(i:" + NodeLabel.CLASS + " {name:$name}) RETURN c.name AS name",
                             Values.parameters("name", interfaceName))
                     .list(r -> r.get("name").asString());
+            return wrap(res, limit, page, pageSize);
         }
     }
 
     @Override
-    public List<String> findSubclasses(String className, int depth) {
+    public QueryResult<String> findSubclasses(String className, int depth, Integer limit, Integer page, Integer pageSize) {
         try (Session session = driver.session()) {
             String query = "MATCH (sub:" + NodeLabel.CLASS + ")-[:" + EdgeType.EXTENDS + "*1.." + depth + "]->(sup:" + NodeLabel.CLASS + " {name:$name}) RETURN DISTINCT sub.name AS name";
-            return session.run(query, Values.parameters("name", className))
+            List<String> res = session.run(query, Values.parameters("name", className))
                     .list(r -> r.get("name").asString());
+            return wrap(res, limit, page, pageSize);
         }
     }
 
     @Override
-    public List<String> findDependencies(String className, Integer depth) {
+    public QueryResult<String> findDependencies(String className, Integer depth, Integer limit, Integer page, Integer pageSize) {
         try (Session session = driver.session()) {
             String query =
                     "MATCH (c:" + NodeLabel.CLASS + " {name:$name})-[:" + EdgeType.DEPENDS_ON + "*]->(dep:" + NodeLabel.CLASS + ") " +
@@ -56,13 +73,14 @@ public class QueryServiceImpl implements QueryService {
             if (depth != null) {
                 query += " LIMIT " + depth;
             }
-            return session.run(query, Values.parameters("name", className))
+            List<String> res = session.run(query, Values.parameters("name", className))
                     .list(r -> r.get("name").asString());
+            return wrap(res, limit, page, pageSize);
         }
     }
 
     @Override
-    public List<String> findPathBetweenClasses(String fromClass, String toClass, Integer maxDepth) {
+    public QueryResult<String> findPathBetweenClasses(String fromClass, String toClass, Integer maxDepth) {
         try (Session session = driver.session()) {
             String query = "MATCH p=shortestPath((s:" + NodeLabel.CLASS + " {name:$from})-[:" + EdgeType.DEPENDS_ON + "*]->(t:" + NodeLabel.CLASS + " {name:$to})) " +
                     "RETURN [n IN nodes(p) | n.name] AS path";
@@ -70,18 +88,18 @@ public class QueryServiceImpl implements QueryService {
                             Values.parameters("from", fromClass, "to", toClass))
                     .list(r -> r.get("path").asList(v -> v.asString()));
             if (paths.isEmpty()) {
-                return java.util.Collections.emptyList();
+                return wrap(java.util.Collections.emptyList(), null, null, null);
             }
             List<String> result = paths.get(0);
             if (maxDepth != null && result.size() - 1 > maxDepth) {
-                return java.util.Collections.emptyList();
+                return wrap(java.util.Collections.emptyList(), null, null, null);
             }
-            return result;
+            return wrap(result, null, null, null);
         }
     }
 
     @Override
-    public List<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit) {
+    public QueryResult<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit, Integer page, Integer pageSize) {
         try (Session session = driver.session()) {
             String query =
                     "MATCH (caller:" + NodeLabel.METHOD + ")-[:CALLS]->(target:" + NodeLabel.METHOD + " {class:$class, signature:$sig}) " +
@@ -91,18 +109,19 @@ public class QueryServiceImpl implements QueryService {
                 query += " LIMIT $limit";
                 params = Values.parameters("class", className, "sig", methodSignature, "limit", limit);
             }
-            return session.run(query, params)
+            List<String> res = session.run(query, params)
                     .list(r -> r.get("sig").asString());
+            return wrap(res, limit, page, pageSize);
         }
     }
 
     @Override
-    public List<String> findBeansWithAnnotation(String annotation) {
-        return searchByAnnotation(annotation, "class");
+    public QueryResult<String> findBeansWithAnnotation(String annotation, Integer limit, Integer page, Integer pageSize) {
+        return searchByAnnotation(annotation, "class", limit, page, pageSize);
     }
 
     @Override
-    public List<String> searchByAnnotation(String annotation, String targetType) {
+    public QueryResult<String> searchByAnnotation(String annotation, String targetType, Integer limit, Integer page, Integer pageSize) {
         try (Session session = driver.session()) {
             boolean method = "method".equalsIgnoreCase(targetType);
             String label = method ? NodeLabel.METHOD.toString() : NodeLabel.CLASS.toString();
@@ -110,62 +129,68 @@ public class QueryServiceImpl implements QueryService {
             String query =
                     "MATCH (n:" + label + ") WHERE ANY(a IN n.annotations WHERE a = $ann) " +
                             "RETURN n." + returnProp + " AS name";
-            return session.run(query, Values.parameters("ann", annotation))
+            List<String> res = session.run(query, Values.parameters("ann", annotation))
                     .list(r -> r.get("name").asString());
+            return wrap(res, limit, page, pageSize);
         }
     }
 
     @Override
-    public List<String> findHttpEndpoints(String basePath, String httpMethod) {
+    public QueryResult<String> findHttpEndpoints(String basePath, String httpMethod, Integer limit, Integer page, Integer pageSize) {
         try (Session session = driver.session()) {
             String query =
                     "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.httpRoute STARTS WITH $base " +
                             "AND m.httpMethod = $verb RETURN m.class + '|' + m.signature AS ep";
-            return session.run(query, Values.parameters("base", basePath, "verb", httpMethod))
+            List<String> res = session.run(query, Values.parameters("base", basePath, "verb", httpMethod))
                     .list(r -> r.get("ep").asString());
+            return wrap(res, limit, page, pageSize);
         }
     }
 
     @Override
-    public List<String> findControllersUsingService(String serviceClassName) {
+    public QueryResult<String> findControllersUsingService(String serviceClassName, Integer limit, Integer page, Integer pageSize) {
         try (Session session = driver.session()) {
             String query =
                     "MATCH (svc:" + NodeLabel.CLASS + " {name:$svc})<-[:" + EdgeType.USES + "]-(c:" + NodeLabel.CLASS + ") " +
                             "WHERE ANY(a IN c.annotations WHERE a IN ['org.springframework.stereotype.Controller','org.springframework.web.bind.annotation.RestController']) " +
                             "RETURN c.name AS name";
-            return session.run(query, Values.parameters("svc", serviceClassName))
+            List<String> res = session.run(query, Values.parameters("svc", serviceClassName))
                     .list(r -> r.get("name").asString());
+            return wrap(res, limit, page, pageSize);
         }
     }
 
     @Override
-    public List<String> findEventListeners(String eventType) {
+    public QueryResult<String> findEventListeners(String eventType, Integer limit, Integer page, Integer pageSize) {
         try (Session session = driver.session()) {
             String query =
                     "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.eventType = $type RETURN m.class + '|' + m.signature AS m";
-            return session.run(query, Values.parameters("type", eventType))
+            List<String> res = session.run(query, Values.parameters("type", eventType))
                     .list(r -> r.get("m").asString());
+            return wrap(res, limit, page, pageSize);
         }
     }
 
     @Override
-    public List<String> findScheduledTasks() {
+    public QueryResult<String> findScheduledTasks(Integer limit, Integer page, Integer pageSize) {
         try (Session session = driver.session()) {
             String query =
                     "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.cron IS NOT NULL RETURN m.class + '|' + m.signature + '|' + m.cron AS m";
-            return session.run(query, Values.parameters())
+            List<String> res = session.run(query, Values.parameters())
                     .list(r -> r.get("m").asString());
+            return wrap(res, limit, page, pageSize);
         }
     }
 
     @Override
-    public List<String> findConfigPropertyUsage(String propertyKey) {
+    public QueryResult<String> findConfigPropertyUsage(String propertyKey, Integer limit, Integer page, Integer pageSize) {
         try (Session session = driver.session()) {
             String query =
                     "MATCH (c:" + NodeLabel.CLASS + ") WHERE $key IN c.configProperties RETURN c.name AS loc " +
                             "UNION MATCH (m:" + NodeLabel.METHOD + ") WHERE $key IN m.configProperties RETURN m.class + '|' + m.signature AS loc";
-            return session.run(query, Values.parameters("key", propertyKey))
+            List<String> res = session.run(query, Values.parameters("key", propertyKey))
                     .list(r -> r.get("loc").asString());
+            return wrap(res, limit, page, pageSize);
         }
     }
 
