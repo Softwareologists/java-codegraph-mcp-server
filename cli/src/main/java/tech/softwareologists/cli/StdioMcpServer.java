@@ -62,41 +62,79 @@ public class StdioMcpServer implements Runnable {
                 }
 
                 if (req.has("findCallers")) {
-                    String cls = req.getString("findCallers");
-                    printArray(queryService.findCallers(cls, null, null, null).getItems());
+                    Object val = req.get("findCallers");
+                    String cls;
+                    Integer limit = null;
+                    Integer page = null;
+                    Integer pageSize = null;
+                    if (val instanceof JSONObject) {
+                        JSONObject o = (JSONObject) val;
+                        cls = o.getString("className");
+                        limit = o.has("limit") ? o.getInt("limit") : null;
+                        page = o.has("page") ? o.getInt("page") : null;
+                        pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
+                    } else {
+                        cls = val.toString();
+                    }
+                    printArray(queryService.findCallers(cls, limit, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("findImplementations")) {
-                    String iface = req.getString("findImplementations");
-                    printArray(queryService.findImplementations(iface, null, null, null).getItems());
+                    Object val = req.get("findImplementations");
+                    String iface;
+                    Integer limit = null;
+                    Integer page = null;
+                    Integer pageSize = null;
+                    if (val instanceof JSONObject) {
+                        JSONObject o = (JSONObject) val;
+                        iface = o.getString("interfaceName");
+                        limit = o.has("limit") ? o.getInt("limit") : null;
+                        page = o.has("page") ? o.getInt("page") : null;
+                        pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
+                    } else {
+                        iface = val.toString();
+                    }
+                    printArray(queryService.findImplementations(iface, limit, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("findSubclasses")) {
                     Object val = req.get("findSubclasses");
                     String cls;
                     int depth = 1;
+                    Integer limit = null;
+                    Integer page = null;
+                    Integer pageSize = null;
                     if (val instanceof JSONObject) {
                         JSONObject o = (JSONObject) val;
                         cls = o.getString("className");
                         depth = o.optInt("depth", 1);
+                        limit = o.has("limit") ? o.getInt("limit") : null;
+                        page = o.has("page") ? o.getInt("page") : null;
+                        pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
                     } else {
                         cls = val.toString();
                     }
-                    printArray(queryService.findSubclasses(cls, depth, null, null, null).getItems());
+                    printArray(queryService.findSubclasses(cls, depth, limit, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("findDependencies")) {
                     Object val = req.get("findDependencies");
                     String cls;
                     Integer depth = null;
+                    Integer limit = null;
+                    Integer page = null;
+                    Integer pageSize = null;
                     if (val instanceof JSONObject) {
                         JSONObject o = (JSONObject) val;
                         cls = o.getString("className");
                         depth = o.has("depth") ? o.getInt("depth") : null;
+                        limit = o.has("limit") ? o.getInt("limit") : null;
+                        page = o.has("page") ? o.getInt("page") : null;
+                        pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
                     } else {
                         cls = val.toString();
                     }
-                    printArray(queryService.findDependencies(cls, depth, null, null, null).getItems());
+                    printArray(queryService.findDependencies(cls, depth, limit, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("findPathBetweenClasses")) {
@@ -112,45 +150,114 @@ public class StdioMcpServer implements Runnable {
                     String cls = o.getString("className");
                     String sig = o.getString("methodSignature");
                     Integer lim = o.has("limit") ? o.getInt("limit") : null;
-                    printArray(queryService.findMethodsCallingMethod(cls, sig, lim, null, null).getItems());
+                    Integer page = o.has("page") ? o.getInt("page") : null;
+                    Integer pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
+                    printArray(queryService.findMethodsCallingMethod(cls, sig, lim, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("findBeansWithAnnotation")) {
-                    String ann = req.getString("findBeansWithAnnotation");
-                    printArray(queryService.findBeansWithAnnotation(ann, null, null, null).getItems());
+                    Object val = req.get("findBeansWithAnnotation");
+                    String ann;
+                    Integer limit = null;
+                    Integer page = null;
+                    Integer pageSize = null;
+                    if (val instanceof JSONObject) {
+                        JSONObject o = (JSONObject) val;
+                        ann = o.getString("annotation");
+                        limit = o.has("limit") ? o.getInt("limit") : null;
+                        page = o.has("page") ? o.getInt("page") : null;
+                        pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
+                    } else {
+                        ann = val.toString();
+                    }
+                    printArray(queryService.findBeansWithAnnotation(ann, limit, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("searchByAnnotation")) {
                     JSONObject o = req.getJSONObject("searchByAnnotation");
                     String ann = o.getString("annotation");
                     String target = o.optString("targetType", "class");
-                    printArray(queryService.searchByAnnotation(ann, target, null, null, null).getItems());
+                    Integer limit = o.has("limit") ? o.getInt("limit") : null;
+                    Integer page = o.has("page") ? o.getInt("page") : null;
+                    Integer pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
+                    printArray(queryService.searchByAnnotation(ann, target, limit, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("findHttpEndpoints")) {
                     JSONObject o = req.getJSONObject("findHttpEndpoints");
                     String base = o.getString("basePath");
                     String verb = o.getString("httpMethod");
-                    printArray(queryService.findHttpEndpoints(base, verb, null, null, null).getItems());
+                    Integer limit = o.has("limit") ? o.getInt("limit") : null;
+                    Integer page = o.has("page") ? o.getInt("page") : null;
+                    Integer pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
+                    printArray(queryService.findHttpEndpoints(base, verb, limit, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("findControllersUsingService")) {
-                    String svc = req.getString("findControllersUsingService");
-                    printArray(queryService.findControllersUsingService(svc, null, null, null).getItems());
+                    Object val = req.get("findControllersUsingService");
+                    String svc;
+                    Integer limit = null;
+                    Integer page = null;
+                    Integer pageSize = null;
+                    if (val instanceof JSONObject) {
+                        JSONObject o = (JSONObject) val;
+                        svc = o.getString("serviceClassName");
+                        limit = o.has("limit") ? o.getInt("limit") : null;
+                        page = o.has("page") ? o.getInt("page") : null;
+                        pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
+                    } else {
+                        svc = val.toString();
+                    }
+                    printArray(queryService.findControllersUsingService(svc, limit, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("findEventListeners")) {
-                    String ev = req.getString("findEventListeners");
-                    printArray(queryService.findEventListeners(ev, null, null, null).getItems());
+                    Object val = req.get("findEventListeners");
+                    String ev;
+                    Integer limit = null;
+                    Integer page = null;
+                    Integer pageSize = null;
+                    if (val instanceof JSONObject) {
+                        JSONObject o = (JSONObject) val;
+                        ev = o.getString("eventType");
+                        limit = o.has("limit") ? o.getInt("limit") : null;
+                        page = o.has("page") ? o.getInt("page") : null;
+                        pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
+                    } else {
+                        ev = val.toString();
+                    }
+                    printArray(queryService.findEventListeners(ev, limit, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("findScheduledTasks")) {
-                    printArray(queryService.findScheduledTasks(null, null, null).getItems());
+                    JSONObject o = req.optJSONObject("findScheduledTasks");
+                    Integer limit = null;
+                    Integer page = null;
+                    Integer pageSize = null;
+                    if (o != null) {
+                        limit = o.has("limit") ? o.getInt("limit") : null;
+                        page = o.has("page") ? o.getInt("page") : null;
+                        pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
+                    }
+                    printArray(queryService.findScheduledTasks(limit, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("findConfigPropertyUsage")) {
-                    String key = req.getString("findConfigPropertyUsage");
-                    printArray(queryService.findConfigPropertyUsage(key, null, null, null).getItems());
+                    Object val = req.get("findConfigPropertyUsage");
+                    String key;
+                    Integer limit = null;
+                    Integer page = null;
+                    Integer pageSize = null;
+                    if (val instanceof JSONObject) {
+                        JSONObject o = (JSONObject) val;
+                        key = o.getString("propertyKey");
+                        limit = o.has("limit") ? o.getInt("limit") : null;
+                        page = o.has("page") ? o.getInt("page") : null;
+                        pageSize = o.has("pageSize") ? o.getInt("pageSize") : null;
+                    } else {
+                        key = val.toString();
+                    }
+                    printArray(queryService.findConfigPropertyUsage(key, limit, page, pageSize).getItems());
                     continue;
                 }
                 if (req.has("getPackageHierarchy")) {
