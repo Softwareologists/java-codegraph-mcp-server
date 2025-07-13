@@ -20,9 +20,9 @@ public class QueryServiceImplTest {
             }
 
             QueryService service = new QueryServiceImpl(driver);
-            List<String> callers = service.findCallers("dep.A");
-            if (callers.size() != 1 || !callers.get(0).equals("dep.B")) {
-                throw new AssertionError("Unexpected callers: " + callers);
+            tech.softwareologists.core.QueryResult<String> callers = service.findCallers("dep.A", null, null, null);
+            if (callers.getItems().size() != 1 || !callers.getItems().get(0).equals("dep.B")) {
+                throw new AssertionError("Unexpected callers: " + callers.getItems());
             }
         }
     }
@@ -58,12 +58,12 @@ public class QueryServiceImplTest {
             JarImporter.importJar(jar, driver);
 
             QueryService service = new QueryServiceImpl(driver);
-            java.util.List<String> impls = service.findImplementations("impl.MyIntf");
+            tech.softwareologists.core.QueryResult<String> impls = service.findImplementations("impl.MyIntf", null, null, null);
             java.util.Set<String> expected = new java.util.HashSet<>();
             expected.add("impl.ImplA");
             expected.add("impl.ImplB");
-            if (!impls.containsAll(expected) || impls.size() != 2) {
-                throw new AssertionError("Unexpected implementations: " + impls);
+            if (!impls.getItems().containsAll(expected) || impls.getItems().size() != 2) {
+                throw new AssertionError("Unexpected implementations: " + impls.getItems());
             }
         }
     }
@@ -99,17 +99,17 @@ public class QueryServiceImplTest {
             JarImporter.importJar(jar, driver);
 
             QueryService service = new QueryServiceImpl(driver);
-            java.util.List<String> depth1 = service.findSubclasses("hier.Base", 1);
-            if (depth1.size() != 1 || !depth1.get(0).equals("hier.Mid")) {
-                throw new AssertionError("Unexpected depth1 result: " + depth1);
+            tech.softwareologists.core.QueryResult<String> depth1 = service.findSubclasses("hier.Base", 1, null, null, null);
+            if (depth1.getItems().size() != 1 || !depth1.getItems().get(0).equals("hier.Mid")) {
+                throw new AssertionError("Unexpected depth1 result: " + depth1.getItems());
             }
 
-            java.util.List<String> depth2 = service.findSubclasses("hier.Base", 2);
+            tech.softwareologists.core.QueryResult<String> depth2 = service.findSubclasses("hier.Base", 2, null, null, null);
             java.util.Set<String> expected = new java.util.HashSet<>();
             expected.add("hier.Mid");
             expected.add("hier.Leaf");
-            if (!depth2.containsAll(expected) || depth2.size() != 2) {
-                throw new AssertionError("Unexpected depth2 result: " + depth2);
+            if (!depth2.getItems().containsAll(expected) || depth2.getItems().size() != 2) {
+                throw new AssertionError("Unexpected depth2 result: " + depth2.getItems());
             }
         }
     }
@@ -127,17 +127,17 @@ public class QueryServiceImplTest {
             }
 
             QueryService service = new QueryServiceImpl(driver);
-            List<String> depth1 = service.findDependencies("A", 1);
-            if (depth1.size() != 1 || !depth1.get(0).equals("B")) {
-                throw new AssertionError("Unexpected depth1 result: " + depth1);
+            tech.softwareologists.core.QueryResult<String> depth1 = service.findDependencies("A", 1, null, null, null);
+            if (depth1.getItems().size() != 1 || !depth1.getItems().get(0).equals("B")) {
+                throw new AssertionError("Unexpected depth1 result: " + depth1.getItems());
             }
 
-            List<String> depth2 = service.findDependencies("A", 2);
+            tech.softwareologists.core.QueryResult<String> depth2 = service.findDependencies("A", 2, null, null, null);
             java.util.Set<String> expected = new java.util.HashSet<>();
             expected.add("B");
             expected.add("C");
-            if (!depth2.containsAll(expected) || depth2.size() != 2) {
-                throw new AssertionError("Unexpected depth2 result: " + depth2);
+            if (!depth2.getItems().containsAll(expected) || depth2.getItems().size() != 2) {
+                throw new AssertionError("Unexpected depth2 result: " + depth2.getItems());
             }
         }
     }
@@ -157,15 +157,15 @@ public class QueryServiceImplTest {
             }
 
             QueryService service = new QueryServiceImpl(driver);
-            java.util.List<String> within = service.findPathBetweenClasses("A", "D", 3);
+            tech.softwareologists.core.QueryResult<String> within = service.findPathBetweenClasses("A", "D", 3);
             java.util.List<String> expected = java.util.Arrays.asList("A", "B", "C", "D");
-            if (!within.equals(expected)) {
-                throw new AssertionError("Unexpected path: " + within);
+            if (!within.getItems().equals(expected)) {
+                throw new AssertionError("Unexpected path: " + within.getItems());
             }
 
-            java.util.List<String> tooShort = service.findPathBetweenClasses("A", "D", 2);
-            if (!tooShort.isEmpty()) {
-                throw new AssertionError("Path should be empty when exceeding depth: " + tooShort);
+            tech.softwareologists.core.QueryResult<String> tooShort = service.findPathBetweenClasses("A", "D", 2);
+            if (!tooShort.getItems().isEmpty()) {
+                throw new AssertionError("Path should be empty when exceeding depth: " + tooShort.getItems());
             }
         }
     }
@@ -181,9 +181,9 @@ public class QueryServiceImplTest {
             }
 
             QueryService service = new QueryServiceImpl(driver);
-            List<String> callers = service.findMethodsCallingMethod("A", "a()V", null);
-            if (callers.size() != 1 || !callers.get(0).equals("b()V")) {
-                throw new AssertionError("Unexpected callers: " + callers);
+            tech.softwareologists.core.QueryResult<String> callers = service.findMethodsCallingMethod("A", "a()V", null, null, null);
+            if (callers.getItems().size() != 1 || !callers.getItems().get(0).equals("b()V")) {
+                throw new AssertionError("Unexpected callers: " + callers.getItems());
             }
         }
     }
@@ -201,16 +201,16 @@ public class QueryServiceImplTest {
             }
 
             QueryService service = new QueryServiceImpl(driver);
-            List<String> limit1 = service.findMethodsCallingMethod("A", "a()V", 1);
-            if (limit1.size() != 1) {
-                throw new AssertionError("Unexpected limit1 result: " + limit1);
+            tech.softwareologists.core.QueryResult<String> limit1 = service.findMethodsCallingMethod("A", "a()V", 1, null, null);
+            if (limit1.getItems().size() != 1) {
+                throw new AssertionError("Unexpected limit1 result: " + limit1.getItems());
             }
-            List<String> all = service.findMethodsCallingMethod("A", "a()V", null);
+            tech.softwareologists.core.QueryResult<String> all = service.findMethodsCallingMethod("A", "a()V", null, null, null);
             java.util.Set<String> expected = new java.util.HashSet<>();
             expected.add("b()V");
             expected.add("c()V");
-            if (!all.containsAll(expected) || all.size() != 2) {
-                throw new AssertionError("Unexpected all result: " + all);
+            if (!all.getItems().containsAll(expected) || all.getItems().size() != 2) {
+                throw new AssertionError("Unexpected all result: " + all.getItems());
             }
         }
     }
@@ -246,17 +246,17 @@ public class QueryServiceImplTest {
             JarImporter.importJar(jar, driver);
 
             QueryService service = new QueryServiceImpl(driver);
-            java.util.List<String> all = service.findMethodsCallingMethod("invoke.Callee", "methodB()V", null);
+            tech.softwareologists.core.QueryResult<String> all = service.findMethodsCallingMethod("invoke.Callee", "methodB()V", null, null, null);
             java.util.Set<String> expected = new java.util.HashSet<>();
             expected.add("methodA()V");
             expected.add("methodC()V");
-            if (!all.containsAll(expected) || all.size() != 2) {
-                throw new AssertionError("Unexpected all result: " + all);
+            if (!all.getItems().containsAll(expected) || all.getItems().size() != 2) {
+                throw new AssertionError("Unexpected all result: " + all.getItems());
             }
 
-            java.util.List<String> limit1 = service.findMethodsCallingMethod("invoke.Callee", "methodB()V", 1);
-            if (limit1.size() != 1 || !expected.contains(limit1.get(0))) {
-                throw new AssertionError("Unexpected limit result: " + limit1);
+            tech.softwareologists.core.QueryResult<String> limit1 = service.findMethodsCallingMethod("invoke.Callee", "methodB()V", 1, null, null);
+            if (limit1.getItems().size() != 1 || !expected.contains(limit1.getItems().get(0))) {
+                throw new AssertionError("Unexpected limit result: " + limit1.getItems());
             }
         }
     }
@@ -295,14 +295,14 @@ public class QueryServiceImplTest {
             JarImporter.importJar(jar, driver);
 
             QueryService service = new QueryServiceImpl(driver);
-            java.util.List<String> classes = service.findBeansWithAnnotation("ann.MyAnno");
-            if (classes.size() != 1 || !classes.get(0).equals("ann.AnnoClass")) {
-                throw new AssertionError("Unexpected classes: " + classes);
+            tech.softwareologists.core.QueryResult<String> classes = service.findBeansWithAnnotation("ann.MyAnno", null, null, null);
+            if (classes.getItems().size() != 1 || !classes.getItems().get(0).equals("ann.AnnoClass")) {
+                throw new AssertionError("Unexpected classes: " + classes.getItems());
             }
 
-            java.util.List<String> methods = service.searchByAnnotation("ann.MyAnno", "method");
-            if (methods.size() != 1 || !methods.get(0).equals("foo()V")) {
-                throw new AssertionError("Unexpected methods: " + methods);
+            tech.softwareologists.core.QueryResult<String> methods = service.searchByAnnotation("ann.MyAnno", "method", null, null, null);
+            if (methods.getItems().size() != 1 || !methods.getItems().get(0).equals("foo()V")) {
+                throw new AssertionError("Unexpected methods: " + methods.getItems());
             }
         }
     }
@@ -363,14 +363,14 @@ public class QueryServiceImplTest {
             JarImporter.importJar(jar, driver);
 
             QueryService service = new QueryServiceImpl(driver);
-            java.util.List<String> get = service.findHttpEndpoints("/foo", "GET");
-            if (get.size() != 1 || !get.get(0).contains("foo()V")) {
-                throw new AssertionError("Unexpected GET result: " + get);
+            tech.softwareologists.core.QueryResult<String> get = service.findHttpEndpoints("/foo", "GET", null, null, null);
+            if (get.getItems().size() != 1 || !get.getItems().get(0).contains("foo()V")) {
+                throw new AssertionError("Unexpected GET result: " + get.getItems());
             }
 
-            java.util.List<String> post = service.findHttpEndpoints("/bar", "POST");
-            if (post.size() != 1 || !post.get(0).contains("bar()V")) {
-                throw new AssertionError("Unexpected POST result: " + post);
+            tech.softwareologists.core.QueryResult<String> post = service.findHttpEndpoints("/bar", "POST", null, null, null);
+            if (post.getItems().size() != 1 || !post.getItems().get(0).contains("bar()V")) {
+                throw new AssertionError("Unexpected POST result: " + post.getItems());
             }
         }
     }
@@ -426,9 +426,9 @@ public class QueryServiceImplTest {
             JarImporter.importJar(jar, driver);
 
             QueryService serviceApi = new QueryServiceImpl(driver);
-            java.util.List<String> ctrls = serviceApi.findControllersUsingService("inj.MyService");
-            if (ctrls.size() != 1 || !ctrls.get(0).equals("inj.MyController")) {
-                throw new AssertionError("Unexpected controllers: " + ctrls);
+            tech.softwareologists.core.QueryResult<String> ctrls = serviceApi.findControllersUsingService("inj.MyService", null, null, null);
+            if (ctrls.getItems().size() != 1 || !ctrls.getItems().get(0).equals("inj.MyController")) {
+                throw new AssertionError("Unexpected controllers: " + ctrls.getItems());
             }
         }
     }
@@ -478,9 +478,9 @@ public class QueryServiceImplTest {
             JarImporter.importJar(jar, driver);
 
             QueryService svc = new QueryServiceImpl(driver);
-            java.util.List<String> listeners = svc.findEventListeners("evt.MyEvent");
-            if (listeners.size() != 1 || !listeners.get(0).contains("handle")) {
-                throw new AssertionError("Unexpected listeners: " + listeners);
+            tech.softwareologists.core.QueryResult<String> listeners = svc.findEventListeners("evt.MyEvent", null, null, null);
+            if (listeners.getItems().size() != 1 || !listeners.getItems().get(0).contains("handle")) {
+                throw new AssertionError("Unexpected listeners: " + listeners.getItems());
             }
         }
     }
@@ -527,9 +527,9 @@ public class QueryServiceImplTest {
             JarImporter.importJar(jar, driver);
 
             QueryService svc = new QueryServiceImpl(driver);
-            java.util.List<String> tasks = svc.findScheduledTasks();
-            if (tasks.size() != 1 || !tasks.get(0).contains("run()V|0 0 * * * *")) {
-                throw new AssertionError("Unexpected tasks: " + tasks);
+            tech.softwareologists.core.QueryResult<String> tasks = svc.findScheduledTasks(null, null, null);
+            if (tasks.getItems().size() != 1 || !tasks.getItems().get(0).contains("run()V|0 0 * * * *")) {
+                throw new AssertionError("Unexpected tasks: " + tasks.getItems());
             }
         }
     }
@@ -591,13 +591,13 @@ public class QueryServiceImplTest {
             JarImporter.importJar(jar, driver);
 
             QueryService svc = new QueryServiceImpl(driver);
-            java.util.List<String> clsRes = svc.findConfigPropertyUsage("app.url");
-            if (clsRes.size() != 1 || !clsRes.get(0).equals("cfg.MyClass")) {
-                throw new AssertionError("Unexpected class usage: " + clsRes);
+            tech.softwareologists.core.QueryResult<String> clsRes = svc.findConfigPropertyUsage("app.url", null, null, null);
+            if (clsRes.getItems().size() != 1 || !clsRes.getItems().get(0).equals("cfg.MyClass")) {
+                throw new AssertionError("Unexpected class usage: " + clsRes.getItems());
             }
-            java.util.List<String> methRes = svc.findConfigPropertyUsage("app.timeout");
-            if (methRes.size() != 1 || !methRes.get(0).equals("cfg.MyClass|set(I)V")) {
-                throw new AssertionError("Unexpected method usage: " + methRes);
+            tech.softwareologists.core.QueryResult<String> methRes = svc.findConfigPropertyUsage("app.timeout", null, null, null);
+            if (methRes.getItems().size() != 1 || !methRes.getItems().get(0).equals("cfg.MyClass|set(I)V")) {
+                throw new AssertionError("Unexpected method usage: " + methRes.getItems());
             }
         }
     }

@@ -18,68 +18,68 @@ public class StdioMcpServerTest {
 
         QueryService qs = new QueryService() {
             @Override
-            public java.util.List<String> findCallers(String className) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findCallers(String className, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findImplementations(String interfaceName) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findImplementations(String interfaceName, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findSubclasses(String className, int depth) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findSubclasses(String className, int depth, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findDependencies(String className, Integer depth) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findDependencies(String className, Integer depth, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findPathBetweenClasses(String fromClass, String toClass, Integer maxDepth) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findPathBetweenClasses(String fromClass, String toClass, Integer maxDepth) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findBeansWithAnnotation(String annotation) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findBeansWithAnnotation(String annotation, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> searchByAnnotation(String annotation, String targetType) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> searchByAnnotation(String annotation, String targetType, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findHttpEndpoints(String basePath, String httpMethod) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findHttpEndpoints(String basePath, String httpMethod, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findControllersUsingService(String serviceClassName) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findControllersUsingService(String serviceClassName, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findEventListeners(String eventType) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findEventListeners(String eventType, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findScheduledTasks() {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findScheduledTasks(Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findConfigPropertyUsage(String propertyKey) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findConfigPropertyUsage(String propertyKey, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
@@ -119,68 +119,68 @@ public class StdioMcpServerTest {
 
         QueryService qs = new QueryService() {
             @Override
-            public java.util.List<String> findCallers(String className) {
-                return java.util.Collections.singletonList("B");
+            public tech.softwareologists.core.QueryResult<String> findCallers(String className, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.singletonList("B"),1,1,1);
             }
 
             @Override
-            public java.util.List<String> findImplementations(String interfaceName) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findImplementations(String interfaceName, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findSubclasses(String className, int depth) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findSubclasses(String className, int depth, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findDependencies(String className, Integer depth) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findDependencies(String className, Integer depth, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findPathBetweenClasses(String fromClass, String toClass, Integer maxDepth) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findPathBetweenClasses(String fromClass, String toClass, Integer maxDepth) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findBeansWithAnnotation(String annotation) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findBeansWithAnnotation(String annotation, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> searchByAnnotation(String annotation, String targetType) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> searchByAnnotation(String annotation, String targetType, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findHttpEndpoints(String basePath, String httpMethod) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findHttpEndpoints(String basePath, String httpMethod, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findControllersUsingService(String serviceClassName) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findControllersUsingService(String serviceClassName, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findEventListeners(String eventType) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findEventListeners(String eventType, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findScheduledTasks() {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findScheduledTasks(Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override
-            public java.util.List<String> findConfigPropertyUsage(String propertyKey) {
-                return java.util.Collections.emptyList();
+            public tech.softwareologists.core.QueryResult<String> findConfigPropertyUsage(String propertyKey, Integer limit, Integer page, Integer pageSize) {
+                return new tech.softwareologists.core.QueryResult<>(java.util.Collections.emptyList(),1,0,0);
             }
 
             @Override

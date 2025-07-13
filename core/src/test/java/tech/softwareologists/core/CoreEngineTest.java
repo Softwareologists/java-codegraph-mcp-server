@@ -40,9 +40,9 @@ public class CoreEngineTest {
 
         try (CoreEngine engine = new CoreEngineImpl()) {
             engine.importJar(jar);
-            java.util.List<String> callers = engine.getQueryService().findCallers("dep.A");
-            if (callers.size() != 1 || !callers.get(0).equals("dep.B")) {
-                throw new AssertionError("Unexpected callers: " + callers);
+            tech.softwareologists.core.QueryResult<String> callers = engine.getQueryService().findCallers("dep.A", null, null, null);
+            if (callers.getItems().size() != 1 || !callers.getItems().get(0).equals("dep.B")) {
+                throw new AssertionError("Unexpected callers: " + callers.getItems());
             }
 
             String manifest = engine.getManifest();

@@ -63,12 +63,12 @@ public class StdioMcpServer implements Runnable {
 
                 if (req.has("findCallers")) {
                     String cls = req.getString("findCallers");
-                    printArray(queryService.findCallers(cls));
+                    printArray(queryService.findCallers(cls, null, null, null).getItems());
                     continue;
                 }
                 if (req.has("findImplementations")) {
                     String iface = req.getString("findImplementations");
-                    printArray(queryService.findImplementations(iface));
+                    printArray(queryService.findImplementations(iface, null, null, null).getItems());
                     continue;
                 }
                 if (req.has("findSubclasses")) {
@@ -82,7 +82,7 @@ public class StdioMcpServer implements Runnable {
                     } else {
                         cls = val.toString();
                     }
-                    printArray(queryService.findSubclasses(cls, depth));
+                    printArray(queryService.findSubclasses(cls, depth, null, null, null).getItems());
                     continue;
                 }
                 if (req.has("findDependencies")) {
@@ -96,7 +96,7 @@ public class StdioMcpServer implements Runnable {
                     } else {
                         cls = val.toString();
                     }
-                    printArray(queryService.findDependencies(cls, depth));
+                    printArray(queryService.findDependencies(cls, depth, null, null, null).getItems());
                     continue;
                 }
                 if (req.has("findPathBetweenClasses")) {
@@ -104,7 +104,7 @@ public class StdioMcpServer implements Runnable {
                     String from = o.getString("fromClass");
                     String to = o.getString("toClass");
                     Integer max = o.has("maxDepth") ? o.getInt("maxDepth") : null;
-                    printArray(queryService.findPathBetweenClasses(from, to, max));
+                    printArray(queryService.findPathBetweenClasses(from, to, max).getItems());
                     continue;
                 }
                 if (req.has("findMethodsCallingMethod")) {
@@ -112,45 +112,45 @@ public class StdioMcpServer implements Runnable {
                     String cls = o.getString("className");
                     String sig = o.getString("methodSignature");
                     Integer lim = o.has("limit") ? o.getInt("limit") : null;
-                    printArray(queryService.findMethodsCallingMethod(cls, sig, lim));
+                    printArray(queryService.findMethodsCallingMethod(cls, sig, lim, null, null).getItems());
                     continue;
                 }
                 if (req.has("findBeansWithAnnotation")) {
                     String ann = req.getString("findBeansWithAnnotation");
-                    printArray(queryService.findBeansWithAnnotation(ann));
+                    printArray(queryService.findBeansWithAnnotation(ann, null, null, null).getItems());
                     continue;
                 }
                 if (req.has("searchByAnnotation")) {
                     JSONObject o = req.getJSONObject("searchByAnnotation");
                     String ann = o.getString("annotation");
                     String target = o.optString("targetType", "class");
-                    printArray(queryService.searchByAnnotation(ann, target));
+                    printArray(queryService.searchByAnnotation(ann, target, null, null, null).getItems());
                     continue;
                 }
                 if (req.has("findHttpEndpoints")) {
                     JSONObject o = req.getJSONObject("findHttpEndpoints");
                     String base = o.getString("basePath");
                     String verb = o.getString("httpMethod");
-                    printArray(queryService.findHttpEndpoints(base, verb));
+                    printArray(queryService.findHttpEndpoints(base, verb, null, null, null).getItems());
                     continue;
                 }
                 if (req.has("findControllersUsingService")) {
                     String svc = req.getString("findControllersUsingService");
-                    printArray(queryService.findControllersUsingService(svc));
+                    printArray(queryService.findControllersUsingService(svc, null, null, null).getItems());
                     continue;
                 }
                 if (req.has("findEventListeners")) {
                     String ev = req.getString("findEventListeners");
-                    printArray(queryService.findEventListeners(ev));
+                    printArray(queryService.findEventListeners(ev, null, null, null).getItems());
                     continue;
                 }
                 if (req.has("findScheduledTasks")) {
-                    printArray(queryService.findScheduledTasks());
+                    printArray(queryService.findScheduledTasks(null, null, null).getItems());
                     continue;
                 }
                 if (req.has("findConfigPropertyUsage")) {
                     String key = req.getString("findConfigPropertyUsage");
-                    printArray(queryService.findConfigPropertyUsage(key));
+                    printArray(queryService.findConfigPropertyUsage(key, null, null, null).getItems());
                     continue;
                 }
                 if (req.has("getPackageHierarchy")) {
