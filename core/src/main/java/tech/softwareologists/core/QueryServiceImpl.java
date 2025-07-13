@@ -32,51 +32,66 @@ public class QueryServiceImpl implements QueryService {
         return new QueryResult<>(slice, p, ps, total);
     }
 
+    private QueryResult<String> runPagedQuery(String listQuery, String countQuery, java.util.Map<String, Object> params,
+                                              Integer limit, Integer page, Integer pageSize, String field) {
+        try (Session session = driver.session()) {
+            int total = session.run(countQuery, params).single().get("total").asInt();
+
+            int p = page == null ? 1 : page;
+            int ps = pageSize == null ? (limit != null ? limit : total) : pageSize;
+            int skip = Math.max(0, (p - 1) * ps);
+            int fetch = ps;
+            if (limit != null) {
+                if (skip >= limit) {
+                    return new QueryResult<>(java.util.Collections.emptyList(), p, ps, total);
+                }
+                fetch = Math.min(fetch, limit - skip);
+            }
+
+            java.util.Map<String, Object> q = new java.util.HashMap<>(params);
+            q.put("skip", skip);
+            q.put("lim", fetch);
+
+            List<String> items = session.run(listQuery + " ORDER BY " + field + " SKIP $skip LIMIT $lim", q)
+                    .list(r -> r.get(field).asString());
+
+            return new QueryResult<>(items, p, ps, total);
+        }
+    }
+
     @Override
     public QueryResult<String> findCallers(String className, Integer limit, Integer page, Integer pageSize) {
-        try (Session session = driver.session()) {
-            List<String> res = session.run(
-                    "MATCH (c:" + NodeLabel.CLASS + ")-[:" + EdgeType.DEPENDS_ON + "]->(t:" + NodeLabel.CLASS + " {name:$name}) RETURN c.name AS name",
-                    Values.parameters("name", className))
-                    .list(r -> r.get("name").asString());
-            return wrap(res, limit, page, pageSize);
-        }
+        String list = "MATCH (c:" + NodeLabel.CLASS + ")-[:" + EdgeType.DEPENDS_ON + "]->(t:" + NodeLabel.CLASS + " {name:$name}) RETURN c.name AS name";
+        String count = "MATCH (c:" + NodeLabel.CLASS + ")-[:" + EdgeType.DEPENDS_ON + "]->(t:" + NodeLabel.CLASS + " {name:$name}) RETURN count(c) AS total";
+        java.util.Map<String, Object> params = java.util.Collections.singletonMap("name", className);
+        return runPagedQuery(list, count, params, limit, page, pageSize, "name");
     }
 
     @Override
     public QueryResult<String> findImplementations(String interfaceName, Integer limit, Integer page, Integer pageSize) {
-        try (Session session = driver.session()) {
-            List<String> res = session.run(
-                            "MATCH (c:" + NodeLabel.CLASS + ")-[:" + EdgeType.IMPLEMENTS + "]->(i:" + NodeLabel.CLASS + " {name:$name}) RETURN c.name AS name",
-                            Values.parameters("name", interfaceName))
-                    .list(r -> r.get("name").asString());
-            return wrap(res, limit, page, pageSize);
-        }
+        String list = "MATCH (c:" + NodeLabel.CLASS + ")-[:" + EdgeType.IMPLEMENTS + "]->(i:" + NodeLabel.CLASS + " {name:$name}) RETURN c.name AS name";
+        String count = "MATCH (c:" + NodeLabel.CLASS + ")-[:" + EdgeType.IMPLEMENTS + "]->(i:" + NodeLabel.CLASS + " {name:$name}) RETURN count(c) AS total";
+        java.util.Map<String, Object> params = java.util.Collections.singletonMap("name", interfaceName);
+        return runPagedQuery(list, count, params, limit, page, pageSize, "name");
     }
 
     @Override
     public QueryResult<String> findSubclasses(String className, int depth, Integer limit, Integer page, Integer pageSize) {
-        try (Session session = driver.session()) {
-            String query = "MATCH (sub:" + NodeLabel.CLASS + ")-[:" + EdgeType.EXTENDS + "*1.." + depth + "]->(sup:" + NodeLabel.CLASS + " {name:$name}) RETURN DISTINCT sub.name AS name";
-            List<String> res = session.run(query, Values.parameters("name", className))
-                    .list(r -> r.get("name").asString());
-            return wrap(res, limit, page, pageSize);
-        }
+        String base = "MATCH (sub:" + NodeLabel.CLASS + ")-[:" + EdgeType.EXTENDS + "*1.." + depth + "]->(sup:" + NodeLabel.CLASS + " {name:$name}) RETURN DISTINCT sub.name AS name";
+        String count = "MATCH (sub:" + NodeLabel.CLASS + ")-[:" + EdgeType.EXTENDS + "*1.." + depth + "]->(sup:" + NodeLabel.CLASS + " {name:$name}) RETURN count(DISTINCT sub) AS total";
+        java.util.Map<String, Object> params = java.util.Collections.singletonMap("name", className);
+        return runPagedQuery(base, count, params, limit, page, pageSize, "name");
     }
 
     @Override
     public QueryResult<String> findDependencies(String className, Integer depth, Integer limit, Integer page, Integer pageSize) {
-        try (Session session = driver.session()) {
-            String query =
-                    "MATCH (c:" + NodeLabel.CLASS + " {name:$name})-[:" + EdgeType.DEPENDS_ON + "*]->(dep:" + NodeLabel.CLASS + ") " +
-                            "RETURN DISTINCT dep.name AS name";
-            if (depth != null) {
-                query += " LIMIT " + depth;
-            }
-            List<String> res = session.run(query, Values.parameters("name", className))
-                    .list(r -> r.get("name").asString());
-            return wrap(res, limit, page, pageSize);
-        }
+        String pattern = depth == null ? "*" : "*1.." + depth;
+        String list =
+                "MATCH (c:" + NodeLabel.CLASS + " {name:$name})-[:" + EdgeType.DEPENDS_ON + pattern + "]->(dep:" + NodeLabel.CLASS + ") RETURN DISTINCT dep.name AS name";
+        String count =
+                "MATCH (c:" + NodeLabel.CLASS + " {name:$name})-[:" + EdgeType.DEPENDS_ON + pattern + "]->(dep:" + NodeLabel.CLASS + ") RETURN count(DISTINCT dep) AS total";
+        java.util.Map<String, Object> params = java.util.Collections.singletonMap("name", className);
+        return runPagedQuery(list, count, params, limit, page, pageSize, "name");
     }
 
     @Override
@@ -100,19 +115,15 @@ public class QueryServiceImpl implements QueryService {
 
     @Override
     public QueryResult<String> findMethodsCallingMethod(String className, String methodSignature, Integer limit, Integer page, Integer pageSize) {
-        try (Session session = driver.session()) {
-            String query =
-                    "MATCH (caller:" + NodeLabel.METHOD + ")-[:CALLS]->(target:" + NodeLabel.METHOD + " {class:$class, signature:$sig}) " +
-                            "RETURN caller.signature AS sig";
-            var params = Values.parameters("class", className, "sig", methodSignature);
-            if (limit != null) {
-                query += " LIMIT $limit";
-                params = Values.parameters("class", className, "sig", methodSignature, "limit", limit);
-            }
-            List<String> res = session.run(query, params)
-                    .list(r -> r.get("sig").asString());
-            return wrap(res, limit, page, pageSize);
-        }
+        String base =
+                "MATCH (caller:" + NodeLabel.METHOD + ")-[:CALLS]->(target:" + NodeLabel.METHOD + " {class:$class, signature:$sig}) " +
+                        "RETURN caller.signature AS sig";
+        String count =
+                "MATCH (caller:" + NodeLabel.METHOD + ")-[:CALLS]->(target:" + NodeLabel.METHOD + " {class:$class, signature:$sig}) RETURN count(caller) AS total";
+        java.util.Map<String, Object> params = new java.util.HashMap<>();
+        params.put("class", className);
+        params.put("sig", methodSignature);
+        return runPagedQuery(base, count, params, limit, page, pageSize, "sig");
     }
 
     @Override
@@ -122,75 +133,93 @@ public class QueryServiceImpl implements QueryService {
 
     @Override
     public QueryResult<String> searchByAnnotation(String annotation, String targetType, Integer limit, Integer page, Integer pageSize) {
-        try (Session session = driver.session()) {
-            boolean method = "method".equalsIgnoreCase(targetType);
-            String label = method ? NodeLabel.METHOD.toString() : NodeLabel.CLASS.toString();
-            String returnProp = method ? "signature" : "name";
-            String query =
-                    "MATCH (n:" + label + ") WHERE ANY(a IN n.annotations WHERE a = $ann) " +
-                            "RETURN n." + returnProp + " AS name";
-            List<String> res = session.run(query, Values.parameters("ann", annotation))
-                    .list(r -> r.get("name").asString());
-            return wrap(res, limit, page, pageSize);
-        }
+        boolean method = "method".equalsIgnoreCase(targetType);
+        String label = method ? NodeLabel.METHOD.toString() : NodeLabel.CLASS.toString();
+        String returnProp = method ? "signature" : "name";
+        String base =
+                "MATCH (n:" + label + ") WHERE ANY(a IN n.annotations WHERE a = $ann) RETURN n." + returnProp + " AS name";
+        String count =
+                "MATCH (n:" + label + ") WHERE ANY(a IN n.annotations WHERE a = $ann) RETURN count(n) AS total";
+        java.util.Map<String, Object> params = java.util.Collections.singletonMap("ann", annotation);
+        return runPagedQuery(base, count, params, limit, page, pageSize, "name");
     }
 
     @Override
     public QueryResult<String> findHttpEndpoints(String basePath, String httpMethod, Integer limit, Integer page, Integer pageSize) {
-        try (Session session = driver.session()) {
-            String query =
-                    "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.httpRoute STARTS WITH $base " +
-                            "AND m.httpMethod = $verb RETURN m.class + '|' + m.signature AS ep";
-            List<String> res = session.run(query, Values.parameters("base", basePath, "verb", httpMethod))
-                    .list(r -> r.get("ep").asString());
-            return wrap(res, limit, page, pageSize);
-        }
+        String base =
+                "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.httpRoute STARTS WITH $base " +
+                        "AND m.httpMethod = $verb RETURN m.class + '|' + m.signature AS ep";
+        String count =
+                "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.httpRoute STARTS WITH $base AND m.httpMethod = $verb RETURN count(m) AS total";
+        java.util.Map<String, Object> params = new java.util.HashMap<>();
+        params.put("base", basePath);
+        params.put("verb", httpMethod);
+        return runPagedQuery(base, count, params, limit, page, pageSize, "ep");
     }
 
     @Override
     public QueryResult<String> findControllersUsingService(String serviceClassName, Integer limit, Integer page, Integer pageSize) {
-        try (Session session = driver.session()) {
-            String query =
-                    "MATCH (svc:" + NodeLabel.CLASS + " {name:$svc})<-[:" + EdgeType.USES + "]-(c:" + NodeLabel.CLASS + ") " +
-                            "WHERE ANY(a IN c.annotations WHERE a IN ['org.springframework.stereotype.Controller','org.springframework.web.bind.annotation.RestController']) " +
-                            "RETURN c.name AS name";
-            List<String> res = session.run(query, Values.parameters("svc", serviceClassName))
-                    .list(r -> r.get("name").asString());
-            return wrap(res, limit, page, pageSize);
-        }
+        String base =
+                "MATCH (svc:" + NodeLabel.CLASS + " {name:$svc})<-[:" + EdgeType.USES + "]-(c:" + NodeLabel.CLASS + ") " +
+                        "WHERE ANY(a IN c.annotations WHERE a IN ['org.springframework.stereotype.Controller','org.springframework.web.bind.annotation.RestController']) " +
+                        "RETURN c.name AS name";
+        String count =
+                "MATCH (svc:" + NodeLabel.CLASS + " {name:$svc})<-[:" + EdgeType.USES + "]-(c:" + NodeLabel.CLASS + ") " +
+                        "WHERE ANY(a IN c.annotations WHERE a IN ['org.springframework.stereotype.Controller','org.springframework.web.bind.annotation.RestController']) RETURN count(c) AS total";
+        java.util.Map<String, Object> params = java.util.Collections.singletonMap("svc", serviceClassName);
+        return runPagedQuery(base, count, params, limit, page, pageSize, "name");
     }
 
     @Override
     public QueryResult<String> findEventListeners(String eventType, Integer limit, Integer page, Integer pageSize) {
-        try (Session session = driver.session()) {
-            String query =
-                    "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.eventType = $type RETURN m.class + '|' + m.signature AS m";
-            List<String> res = session.run(query, Values.parameters("type", eventType))
-                    .list(r -> r.get("m").asString());
-            return wrap(res, limit, page, pageSize);
-        }
+        String base =
+                "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.eventType = $type RETURN m.class + '|' + m.signature AS m";
+        String count =
+                "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.eventType = $type RETURN count(m) AS total";
+        java.util.Map<String, Object> params = java.util.Collections.singletonMap("type", eventType);
+        return runPagedQuery(base, count, params, limit, page, pageSize, "m");
     }
 
     @Override
     public QueryResult<String> findScheduledTasks(Integer limit, Integer page, Integer pageSize) {
-        try (Session session = driver.session()) {
-            String query =
-                    "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.cron IS NOT NULL RETURN m.class + '|' + m.signature + '|' + m.cron AS m";
-            List<String> res = session.run(query, Values.parameters())
-                    .list(r -> r.get("m").asString());
-            return wrap(res, limit, page, pageSize);
-        }
+        String base =
+                "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.cron IS NOT NULL RETURN m.class + '|' + m.signature + '|' + m.cron AS m";
+        String count = "MATCH (m:" + NodeLabel.METHOD + ") WHERE m.cron IS NOT NULL RETURN count(m) AS total";
+        java.util.Map<String, Object> params = java.util.Collections.emptyMap();
+        return runPagedQuery(base, count, params, limit, page, pageSize, "m");
     }
 
     @Override
     public QueryResult<String> findConfigPropertyUsage(String propertyKey, Integer limit, Integer page, Integer pageSize) {
+        String base =
+                "MATCH (c:" + NodeLabel.CLASS + ") WHERE $key IN c.configProperties RETURN c.name AS loc " +
+                        "UNION MATCH (m:" + NodeLabel.METHOD + ") WHERE $key IN m.configProperties RETURN m.class + '|' + m.signature AS loc";
+        String count =
+                "MATCH (c:" + NodeLabel.CLASS + ") WHERE $key IN c.configProperties RETURN count(c) AS ccount UNION ALL MATCH (m:" + NodeLabel.METHOD + ") WHERE $key IN m.configProperties RETURN count(m) AS mcount";
+        // run count manually using session to sum two counts
         try (Session session = driver.session()) {
-            String query =
-                    "MATCH (c:" + NodeLabel.CLASS + ") WHERE $key IN c.configProperties RETURN c.name AS loc " +
-                            "UNION MATCH (m:" + NodeLabel.METHOD + ") WHERE $key IN m.configProperties RETURN m.class + '|' + m.signature AS loc";
-            List<String> res = session.run(query, Values.parameters("key", propertyKey))
+            var res = session.run("MATCH (c:" + NodeLabel.CLASS + ") WHERE $key IN c.configProperties RETURN count(c) AS c", java.util.Collections.singletonMap("key", propertyKey)).single();
+            int countClass = res.get("c").asInt();
+            var res2 = session.run("MATCH (m:" + NodeLabel.METHOD + ") WHERE $key IN m.configProperties RETURN count(m) AS m", java.util.Collections.singletonMap("key", propertyKey)).single();
+            int total = countClass + res2.get("m").asInt();
+
+            int p = page == null ? 1 : page;
+            int ps = pageSize == null ? (limit != null ? limit : total) : pageSize;
+            int skip = Math.max(0, (p - 1) * ps);
+            int fetch = ps;
+            if (limit != null) {
+                if (skip >= limit) {
+                    return new QueryResult<>(java.util.Collections.emptyList(), p, ps, total);
+                }
+                fetch = Math.min(fetch, limit - skip);
+            }
+            java.util.Map<String, Object> params = new java.util.HashMap<>();
+            params.put("key", propertyKey);
+            params.put("skip", skip);
+            params.put("lim", fetch);
+            List<String> items = session.run(base + " ORDER BY loc SKIP $skip LIMIT $lim", params)
                     .list(r -> r.get("loc").asString());
-            return wrap(res, limit, page, pageSize);
+            return new QueryResult<>(items, p, ps, total);
         }
     }
 

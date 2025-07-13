@@ -5,6 +5,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import tech.softwareologists.core.db.EmbeddedNeo4j;
 import tech.softwareologists.core.db.NodeLabel;
+import tech.softwareologists.core.db.EdgeType;
 
 import java.util.List;
 
@@ -645,6 +646,47 @@ public class QueryServiceImplTest {
             String expected = "{\"name\":\"p1\",\"packages\":[{\"name\":\"p1.a\",\"classes\":[\"p1.a.A\"],\"packages\":[{\"name\":\"p1.a.sub\",\"classes\":[\"p1.a.sub.C\"]}]},{\"name\":\"p1.b\",\"classes\":[\"p1.b.B\"]}]}";
             if (!tree.equals(expected)) {
                 throw new AssertionError("Unexpected tree: " + tree);
+            }
+        }
+    }
+
+    @Test
+    public void findCallers_paging_returnsOrderedSubsetAndTotal() {
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            org.neo4j.driver.Driver driver = db.getDriver();
+            try (org.neo4j.driver.Session session = driver.session()) {
+                session.run("CREATE (:" + NodeLabel.CLASS + " {name:'T'})");
+                for (String n : new String[]{"A","B","C","D","E"}) {
+                    session.run("CREATE (:" + NodeLabel.CLASS + " {name:$n})", java.util.Collections.singletonMap("n", n));
+                    session.run("MATCH (c:" + NodeLabel.CLASS + " {name:$n}), (t:" + NodeLabel.CLASS + " {name:'T'}) CREATE (c)-[:" + EdgeType.DEPENDS_ON + "]->(t)", java.util.Collections.singletonMap("n", n));
+                }
+            }
+
+            QueryService svc = new QueryServiceImpl(driver);
+            QueryResult<String> res = svc.findCallers("T", null, 2, 2);
+            java.util.List<String> expected = java.util.Arrays.asList("C","D");
+            if (!res.getItems().equals(expected) || res.getTotal() != 5 || res.getPage() != 2 || res.getPageSize() != 2) {
+                throw new AssertionError("Paging incorrect: " + res.getItems() + " total=" + res.getTotal());
+            }
+        }
+    }
+
+    @Test
+    public void findBeansWithAnnotation_paging_ordersAndCounts() {
+        try (EmbeddedNeo4j db = new EmbeddedNeo4j()) {
+            org.neo4j.driver.Driver driver = db.getDriver();
+            try (org.neo4j.driver.Session session = driver.session()) {
+                for (String n : new String[]{"C1","C2","C3"}) {
+                    java.util.Map<String,Object> m = new java.util.HashMap<>();
+                    m.put("name", n);
+                    m.put("annotations", java.util.List.of("Ann"));
+                    session.run("CREATE (:" + NodeLabel.CLASS + " {name:$name, annotations:$annotations})", m);
+                }
+            }
+            QueryService svc = new QueryServiceImpl(driver);
+            QueryResult<String> res = svc.findBeansWithAnnotation("Ann", null, 2, 2);
+            if (res.getTotal() != 3 || res.getPage() != 2 || res.getPageSize() != 2 || res.getItems().size() != 1 || !res.getItems().get(0).equals("C3")) {
+                throw new AssertionError("Annotation paging incorrect: " + res.getItems());
             }
         }
     }
