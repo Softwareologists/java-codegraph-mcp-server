@@ -54,5 +54,18 @@ public class ManifestGeneratorTest {
         if (!manifest.contains("exportGraph")) {
             throw new AssertionError("Manifest missing exportGraph capability: " + manifest);
         }
+
+        if (!manifest.contains("\"defaults\"")) {
+            throw new AssertionError("Manifest missing defaults section: " + manifest);
+        }
+        if (!manifest.contains("\"limit\":100")) {
+            throw new AssertionError("Manifest missing default limit: " + manifest);
+        }
+        if (!manifest.contains("\"pageSize\":50")) {
+            throw new AssertionError("Manifest missing default pageSize: " + manifest);
+        }
+        if (!manifest.contains("\"targetType\":\"class\"")) {
+            throw new AssertionError("Manifest missing searchByAnnotation targetType default: " + manifest);
+        }
     }
 }
