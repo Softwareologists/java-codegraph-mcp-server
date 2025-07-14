@@ -49,9 +49,10 @@ jobs:
           else
             git log "$TAG" --pretty=format:'* %s' > changelog.txt
           fi
-          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          END_MARKER="$(uuidgen)"
+          echo "changelog<<$END_MARKER" >> "$GITHUB_OUTPUT"
           cat changelog.txt >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "$END_MARKER" >> "$GITHUB_OUTPUT"
       - name: Publish Release
         uses: softprops/action-gh-release@v1
         with:
