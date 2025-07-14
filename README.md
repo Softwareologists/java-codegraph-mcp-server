@@ -1,7 +1,7 @@
 # CodeGraph MCP Server for Java applications(java-codegraph-mcp-server)
 
 [![CI](https://github.com/Softwareologists/java-codegraph-mcp-server/actions/workflows/pr-tests.yml/badge.svg)](https://github.com/Softwareologists/java-codegraph-mcp-server/actions/workflows/pr-tests.yml)
-[![Build](https://github.com/Softwareologists/java-codegraph-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/Softwareologists/java-codegraph-mcp-server/actions/workflows/ci.yml)
+[![Release](https://github.com/Softwareologists/java-codegraph-mcp-server/actions/workflows/release.yml/badge.svg)](https://github.com/Softwareologists/java-codegraph-mcp-server/actions/workflows/release.yml)
 
 A Java-based multi-module project that uses ClassGraph to scan JARs (and IntelliJ PSI), persists the resulting class-dependency graph in an embedded Neo4j database, and exposes it over the MCP protocol via both a CLI folder-watcher and an IntelliJ plugin.
 
