@@ -101,7 +101,7 @@ For a full demonstration:
      curl -X POST -H "Content-Type: application/json" \
        -d '{"findCallers":{"className":"com.example.A","limit":10,"page":2,"pageSize":5}}' \
        http://localhost:9090/mcp/query
-    ```
+     ```
    * Omitting these parameters uses the defaults shown in the manifest.
 
 For detailed setup steps see [examples/idea-launch.md](examples/idea-launch.md).
