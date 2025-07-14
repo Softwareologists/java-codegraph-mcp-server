@@ -1,41 +1,30 @@
 # CodeGraph MCP Server
 
-A multi-module project that indexes Java class dependencies and exposes them
-via the MCP protocol.
+**Explore your codebase with immediate insight and powerful graphs.**
 
-## Modules
+CodeGraph MCP Server turns your compiled artifacts or IntelliJ project into a navigable dependency map. It uses ClassGraph and an embedded Neo4j instance to maintain a blazing‑fast index that you can query via the open MCP protocol from the command line or right inside IntelliJ.
 
-### Core
+## Features
 
-- Imports JAR files and discovers classes with **ClassGraph**.
-- Persists classes and their dependencies to an embedded **Neo4j** database.
-- Provides `QueryService` with methods such as `findCallers`.
-- Generates an MCP manifest through `ManifestGenerator`.
+- **Instant indexing** – new JARs and project classes are scanned as soon as they appear, keeping the graph current at all times.
+- **Persistent graph storage** – an embedded Neo4j database serves results in milliseconds even for large codebases.
+- **Flexible deployment** – use the standalone CLI in CI pipelines or enable the IntelliJ plugin for seamless in-IDE analysis.
+- **Rich query API** – discover call hierarchies, outbound dependencies and more through simple JSON requests.
+- **Automatic manifest generation** – each server advertises its capabilities so integrations always know which endpoints are available.
 
-### CLI
+## Use Cases
 
-- `CliMain` parses command line options to watch directories or project paths.
-- `JarWatcher` detects new JAR files and triggers imports.
-- `StdioMcpServer` responds to manifest and query requests over STDIO.
-- `ProjectDirWatcher` and `ProjectDirImporter` handle full project imports.
-- Packaged as a standalone fat JAR using the `shadowJar` task.
+- **Impact analysis** – understand what will break before you refactor or remove code so you can fix issues proactively.
+- **Architecture reviews** – visualise cross-module relationships to uncover hidden coupling and design drift.
+- **Continuous integration reporting** – monitor how dependencies evolve across builds and catch surprises early.
+- **IDE exploration** – browse callers, callees and references without ever leaving IntelliJ.
 
-### IntelliJ
+## Why Choose CodeGraph?
 
-- `StartupActivity` scans the project when the IDE opens.
-- `PsiClassImportService` collects PSI classes for indexing.
-- `PsiClassChangeListener` updates the graph on file changes.
-- `HttpMcpServer` exposes `/mcp/manifest` and `/mcp/query` over HTTP.
-- A settings panel allows configuring port and package filters.
+- **Zero configuration** – just point to your jars or open your IDE and the server handles everything else.
+- **Incremental updates** – background watchers notice new artifacts and source changes automatically so the graph is never stale.
+- **Open protocol** – query over STDIO or HTTP using plain JSON, making integration with any tool straightforward.
 
-## Running Module Tests
+## Get Started
 
-Run tests for each module individually with Gradle:
-
-```bash
-./gradlew :core:test
-./gradlew :cli:test
-./gradlew :intellij:test
-```
-
-For a full build of all modules use `./gradlew build`.
+[Download the latest CLI jar and IntelliJ plugin from our GitHub Releases](https://github.com/Softwareologists/java-codegraph-mcp-server/releases) and start analysing your projects today.
