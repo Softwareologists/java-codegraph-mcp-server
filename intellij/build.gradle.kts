@@ -4,9 +4,12 @@ plugins {
 
 intellij {
     pluginName.set("CodeGraphMcp")
-    version.set("2021.3")
+    // Target IntelliJ IDEA 2024.1 to support recent IDE versions
+    version.set("2024.1")
     type.set("IC")
     plugins.set(listOf("java"))
+    // Keep manually specified since/until-build values from plugin.xml
+    updateSinceUntilBuild.set(false)
 }
 
 java {
