@@ -1,28 +1,30 @@
 # CodeGraph MCP Server
 
-**Visualise and navigate your Java projects like never before.**
+**Explore your codebase with immediate insight and powerful graphs.**
 
-CodeGraph MCP Server automatically scans your JAR files or IntelliJ projects and builds a rich dependency graph stored in an embedded Neo4j database. Through the open MCP protocol you can query this graph from the command line or directly from IntelliJ.
+CodeGraph MCP Server turns your compiled artifacts or IntelliJ project into a navigable dependency map. It uses ClassGraph and an embedded Neo4j instance to maintain a blazing‑fast index that you can query via the open MCP protocol from the command line or right inside IntelliJ.
 
 ## Features
 
-- **Instant indexing** of JARs and project classes using ClassGraph.
-- **Persistent graph storage** with embedded Neo4j for fast lookup.
-- **CLI and IntelliJ plugin** provide flexible deployment options.
-- **Rich query API** to find callers, discover dependencies and more.
-- **Automatic manifest generation** to advertise available query endpoints.
+- **Instant indexing** – new JARs and project classes are scanned as soon as they appear, keeping the graph current at all times.
+- **Persistent graph storage** – an embedded Neo4j database serves results in milliseconds even for large codebases.
+- **Flexible deployment** – use the standalone CLI in CI pipelines or enable the IntelliJ plugin for seamless in-IDE analysis.
+- **Rich query API** – discover call hierarchies, outbound dependencies and more through simple JSON requests.
+- **Automatic manifest generation** – each server advertises its capabilities so integrations always know which endpoints are available.
 
 ## Use Cases
 
-- **Impact analysis** – check what code might break before refactoring.
-- **Architecture reviews** – visualise cross-module coupling.
-- **Continuous integration reporting** – track dependency changes in your pipeline.
-- **IDE exploration** – browse relationships without leaving IntelliJ.
+- **Impact analysis** – understand what will break before you refactor or remove code so you can fix issues proactively.
+- **Architecture reviews** – visualise cross-module relationships to uncover hidden coupling and design drift.
+- **Continuous integration reporting** – monitor how dependencies evolve across builds and catch surprises early.
+- **IDE exploration** – browse callers, callees and references without ever leaving IntelliJ.
 
 ## Why Choose CodeGraph?
 
-- **Zero configuration** – simply point to your JARs or open your IDE.
-- **Incremental updates** – watches directories and source changes automatically.
-- **Open protocol** – MCP JSON requests over STDIO or HTTP make integration easy.
+- **Zero configuration** – just point to your jars or open your IDE and the server handles everything else.
+- **Incremental updates** – background watchers notice new artifacts and source changes automatically so the graph is never stale.
+- **Open protocol** – query over STDIO or HTTP using plain JSON, making integration with any tool straightforward.
 
-Ready to explore your Java codebase? Install the CLI or IntelliJ plugin and start analysing today.
+## Get Started
+
+[Download the latest CLI jar and IntelliJ plugin from our GitHub Releases](https://github.com/Softwareologists/java-codegraph-mcp-server/releases) and start analysing your projects today.
