@@ -17,6 +17,12 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
+sourceSets {
+    main {
+        resources.srcDir("resources")
+    }
+}
+
 dependencies {
     implementation(project(":core"))
     implementation("org.json:json:20240303")
