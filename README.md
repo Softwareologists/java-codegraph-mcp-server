@@ -11,6 +11,7 @@ A Java-based multi-module project that uses ClassGraph to scan JARs (and Intelli
 * **CLI Module**: Watches a specified directory for new JARs and serves MCP requests over STDIO or SSE.
 * **IntelliJ Plugin**: Hooks into the IDE to scan open projects, incrementally update the graph on code changes, and serves MCP over HTTP.
 * **Manifest Generation**: Automatically generates an MCP manifest reflecting available query capabilities.
+* **Default Query Options**: The manifest shows defaults `{ "limit": 100, "page": 1, "pageSize": 50 }` that apply when these values are omitted in a query.
 * **Examples**: Sample scripts for CLI usage and IntelliJ sandbox setup.
 
 ## Repository Structure
@@ -69,6 +70,13 @@ java-codegraph-mcp-server/
 
    * At startup, the manifest JSON is printed.
    * Send JSON queries on stdin; responses appear on stdout.
+   * Example with paging parameters:
+
+     ```bash
+     echo '{"findCallers":{"className":"com.example.A","limit":10,"page":2,"pageSize":5}}' \
+       | java -jar cli/build/libs/cli-all.jar --watch-dir /path/to/jars --stdio
+     ```
+   * Omitted values fallback to the defaults printed in the manifest.
 
 For a full demonstration:
 
@@ -87,6 +95,14 @@ For a full demonstration:
 3. **Use**
 
    * On project open, the plugin scans classes and exposes `/mcp/manifest` and `/mcp/query`.
+   * Example HTTP request with paging:
+
+     ```bash
+     curl -X POST -H "Content-Type: application/json" \
+       -d '{"findCallers":{"className":"com.example.A","limit":10,"page":2,"pageSize":5}}' \
+       http://localhost:9090/mcp/query
+    ```
+   * Omitting these parameters uses the defaults shown in the manifest.
 
 For detailed setup steps see [examples/idea-launch.md](examples/idea-launch.md).
 
