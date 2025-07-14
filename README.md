@@ -119,15 +119,6 @@ stdio_servers = [ { name = "codegraph", command = "java", args = ["-jar","/path/
 sse_servers = ["http://localhost:9090/mcp/query"]
 ```
 
-## Contributing
-
-See [AGENTS.md](AGENTS.md) for guidelines on working with AI agents and feature tasks. To contribute:
-
-1. Pick a task from the Agent Task Breakdown.
-2. Follow the branch and commit naming conventions.
-3. Run tests and examples.
-4. Open a PR against `main`.
-
 ## License
 
 This project is released under the MIT License. See [LICENSE](LICENSE) for details.
