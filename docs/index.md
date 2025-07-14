@@ -1,41 +1,28 @@
 # CodeGraph MCP Server
 
-A multi-module project that indexes Java class dependencies and exposes them
-via the MCP protocol.
+**Visualise and navigate your Java projects like never before.**
 
-## Modules
+CodeGraph MCP Server automatically scans your JAR files or IntelliJ projects and builds a rich dependency graph stored in an embedded Neo4j database. Through the open MCP protocol you can query this graph from the command line or directly from IntelliJ.
 
-### Core
+## Features
 
-- Imports JAR files and discovers classes with **ClassGraph**.
-- Persists classes and their dependencies to an embedded **Neo4j** database.
-- Provides `QueryService` with methods such as `findCallers`.
-- Generates an MCP manifest through `ManifestGenerator`.
+- **Instant indexing** of JARs and project classes using ClassGraph.
+- **Persistent graph storage** with embedded Neo4j for fast lookup.
+- **CLI and IntelliJ plugin** provide flexible deployment options.
+- **Rich query API** to find callers, discover dependencies and more.
+- **Automatic manifest generation** to advertise available query endpoints.
 
-### CLI
+## Use Cases
 
-- `CliMain` parses command line options to watch directories or project paths.
-- `JarWatcher` detects new JAR files and triggers imports.
-- `StdioMcpServer` responds to manifest and query requests over STDIO.
-- `ProjectDirWatcher` and `ProjectDirImporter` handle full project imports.
-- Packaged as a standalone fat JAR using the `shadowJar` task.
+- **Impact analysis** – check what code might break before refactoring.
+- **Architecture reviews** – visualise cross-module coupling.
+- **Continuous integration reporting** – track dependency changes in your pipeline.
+- **IDE exploration** – browse relationships without leaving IntelliJ.
 
-### IntelliJ
+## Why Choose CodeGraph?
 
-- `StartupActivity` scans the project when the IDE opens.
-- `PsiClassImportService` collects PSI classes for indexing.
-- `PsiClassChangeListener` updates the graph on file changes.
-- `HttpMcpServer` exposes `/mcp/manifest` and `/mcp/query` over HTTP.
-- A settings panel allows configuring port and package filters.
+- **Zero configuration** – simply point to your JARs or open your IDE.
+- **Incremental updates** – watches directories and source changes automatically.
+- **Open protocol** – MCP JSON requests over STDIO or HTTP make integration easy.
 
-## Running Module Tests
-
-Run tests for each module individually with Gradle:
-
-```bash
-./gradlew :core:test
-./gradlew :cli:test
-./gradlew :intellij:test
-```
-
-For a full build of all modules use `./gradlew build`.
+Ready to explore your Java codebase? Install the CLI or IntelliJ plugin and start analysing today.
