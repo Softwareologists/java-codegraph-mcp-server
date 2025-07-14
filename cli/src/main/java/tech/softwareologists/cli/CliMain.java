@@ -5,6 +5,7 @@ import tech.softwareologists.core.QueryService;
 import tech.softwareologists.core.QueryServiceImpl;
 import tech.softwareologists.core.db.EmbeddedNeo4j;
 import tech.softwareologists.cli.ProjectDirImporter;
+import tech.softwareologists.cli.SseMcpServer;
 
 import java.util.logging.Logger;
 
@@ -16,7 +17,7 @@ import java.nio.file.Paths;
  */
 public class CliMain {
     /** Usage string shown when arguments are missing or --help is supplied. */
-    public static final String USAGE = "Usage: cli --watch-dir <dir> [--stdio] [--project-dir <dir>]";
+    public static final String USAGE = "Usage: cli --watch-dir <dir> [--stdio] [--sse-port <port>] [--project-dir <dir>]";
     private static final Logger LOGGER = Logger.getLogger(CliMain.class.getName());
 
     public static void main(String[] args) {
@@ -37,6 +38,7 @@ public class CliMain {
         String watchDir = null;
         String projectDir = null;
         boolean stdio = false;
+        int ssePort = -1;
         boolean help = false;
 
         for (int i = 0; i < args.length; i++) {
@@ -55,6 +57,13 @@ public class CliMain {
                     break;
                 case "--stdio":
                     stdio = true;
+                    break;
+                case "--sse-port":
+                    if (i + 1 >= args.length) {
+                        out.println(USAGE);
+                        return 1;
+                    }
+                    ssePort = Integer.parseInt(args[++i]);
                     break;
                 case "--project-dir":
                     if (i + 1 >= args.length) {
@@ -89,8 +98,21 @@ public class CliMain {
             watcher.start();
 
             QueryService service = new QueryServiceImpl(db.getDriver());
+            SseMcpServer sse = null;
+            if (ssePort > 0) {
+                sse = new SseMcpServer(ssePort, service);
+                sse.start();
+                out.println("SSE server started on port " + sse.getPort());
+            }
             if (stdio) {
                 new StdioMcpServer(service, System.in, out).run();
+            } else if (sse != null) {
+                try {
+                    new java.util.concurrent.CountDownLatch(1).await();
+                } catch (InterruptedException ignored) {}
+            }
+            if (sse != null) {
+                sse.stop();
             }
             return 0;
         } catch (Exception e) {
