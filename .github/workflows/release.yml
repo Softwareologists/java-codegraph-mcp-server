@@ -39,27 +39,13 @@ jobs:
           else
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Generate Changelog
-        id: changelog
-        run: |
-          TAG="${{ steps.tag.outputs.tag_name }}"
-          PREV_TAG=$(git describe --abbrev=0 --tags "$TAG^" 2>/dev/null || echo "")
-          if [ -n "$PREV_TAG" ]; then
-            git log "$PREV_TAG..$TAG" --pretty=format:'* %s' > changelog.txt
-          else
-            git log "$TAG" --pretty=format:'* %s' > changelog.txt
-          fi
-          END_MARKER="$(uuidgen)"
-          echo "changelog<<$END_MARKER" >> "$GITHUB_OUTPUT"
-          cat changelog.txt >> "$GITHUB_OUTPUT"
-          echo "$END_MARKER" >> "$GITHUB_OUTPUT"
       - name: Publish Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.tag.outputs.tag_name }}
           name: ${{ steps.tag.outputs.tag_name }}
-          body: ${{ steps.changelog.outputs.changelog }}
           prerelease: ${{ steps.pre.outputs.is_prerelease }}
+          generate_release_notes: true
           files: |
             cli/build/libs/cli-all.jar
             intellij/build/distributions/*.zip
