@@ -4,7 +4,8 @@
     <version>0.1.0</version>
     <vendor email="support@softwareologists.tech" url="https://softwareologists.tech">Softwareologists</vendor>
     <description>Integrates the CodeGraph MCP server with IntelliJ IDEA.</description>
-    <idea-version since-build="213"/>
+    <!-- Compatible with IDE builds up to 251.* -->
+    <idea-version since-build="213" until-build="251.*"/>
     <depends>com.intellij.modules.platform</depends>
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="tech.softwareologists.ij.StartupActivity"/>
