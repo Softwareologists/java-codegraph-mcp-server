@@ -66,6 +66,11 @@ java-codegraph-mcp-server/
    ```bash
    java -jar cli/build/libs/cli-all.jar --watch-dir /path/to/jars --stdio
    ```
+   or start the SSE server:
+
+   ```bash
+   java -jar cli/build/libs/cli-all.jar --watch-dir /path/to/jars --sse-port 8080
+   ```
 4. **Send MCP Requests**
 
    * At startup, the manifest JSON is printed.
@@ -74,14 +79,22 @@ java-codegraph-mcp-server/
 
      ```bash
      echo '{"findCallers":{"className":"com.example.A","limit":10,"page":2,"pageSize":5}}' \
-       | java -jar cli/build/libs/cli-all.jar --watch-dir /path/to/jars --stdio
-     ```
-   * Omitted values fallback to the defaults printed in the manifest.
+      | java -jar cli/build/libs/cli-all.jar --watch-dir /path/to/jars --stdio
+    ```
+  * Omitted values fallback to the defaults printed in the manifest.
+  * When using the SSE server:
+
+    ```bash
+    curl -X POST -H "Content-Type: application/json" \
+      -d '{"findCallers":"com.example.A"}' \
+      http://localhost:8080/mcp/query
+    ```
 
 For a full demonstration:
 
 1. Run `examples/build-example-jar.sh` to create `examples/example.jar`.
 2. Execute `examples/sample-cli.sh` which builds the CLI, imports that JAR, and runs a sample query.
+3. For SSE usage run `examples/sample-sse.sh`.
 
 ## IntelliJ Plugin
 
