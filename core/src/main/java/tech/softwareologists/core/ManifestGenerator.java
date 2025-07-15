@@ -22,7 +22,7 @@ public class ManifestGenerator {
         StringBuilder sb = new StringBuilder();
         sb.append("{\n");
         sb.append("  \"name\": \"CodeGraph MCP\",\n");
-        sb.append("  \"version\": \"0.1.0\",\n");
+        sb.append("  \"version\": \"1.0.1\",\n");
         sb.append("  \"capabilities\": [");
 
         Method[] methods = QueryService.class.getDeclaredMethods();
