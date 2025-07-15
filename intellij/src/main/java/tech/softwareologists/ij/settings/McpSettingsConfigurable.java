@@ -7,12 +7,15 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import java.awt.*;
 
+import tech.softwareologists.ij.McpServerStatus;
+
 /**
  * Settings panel allowing configuration of the MCP HTTP port and package filters.
  */
 public class McpSettingsConfigurable implements Configurable {
     private JTextField portField;
     private JTextField filterField;
+    private JLabel statusLabel;
     private JPanel panel;
 
     @Override
@@ -39,6 +42,13 @@ public class McpSettingsConfigurable implements Configurable {
         gc.gridx = 1;
         filterField = new JTextField(McpSettings.getInstance().getPackageFilters(), 20);
         panel.add(filterField, gc);
+
+        gc.gridx = 0;
+        gc.gridy = 2;
+        panel.add(new JLabel("Server Status:"), gc);
+        gc.gridx = 1;
+        statusLabel = new JLabel(McpServerStatus.getStatus());
+        panel.add(statusLabel, gc);
         return panel;
     }
 
@@ -71,6 +81,9 @@ public class McpSettingsConfigurable implements Configurable {
         McpSettings settings = McpSettings.getInstance();
         portField.setText(String.valueOf(settings.getPort()));
         filterField.setText(settings.getPackageFilters());
+        if (statusLabel != null) {
+            statusLabel.setText(McpServerStatus.getStatus());
+        }
     }
 
     @Override
@@ -78,5 +91,6 @@ public class McpSettingsConfigurable implements Configurable {
         panel = null;
         portField = null;
         filterField = null;
+        statusLabel = null;
     }
 }

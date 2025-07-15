@@ -10,6 +10,7 @@ import tech.softwareologists.core.QueryService;
 import tech.softwareologists.core.QueryServiceImpl;
 import tech.softwareologists.ij.server.HttpMcpServer;
 import tech.softwareologists.ij.settings.McpSettings;
+import tech.softwareologists.ij.McpServerStatus;
 
 /**
  * Project-level startup activity that logs when a project is opened.
@@ -36,8 +37,10 @@ public class StartupActivity implements com.intellij.openapi.startup.StartupActi
             QueryService queryService = new QueryServiceImpl(db.getDriver());
             HttpMcpServer server = new HttpMcpServer(settings.getPort(), queryService);
             server.start();
+            McpServerStatus.setStatus("Running on port " + server.getPort());
             LOG.info("MCP HTTP server started on port " + server.getPort());
         } catch (Exception e) {
+            McpServerStatus.setStatus("Failed to start server: " + e.getMessage());
             LOG.warn("Failed to import project classes", e);
         }
     }
