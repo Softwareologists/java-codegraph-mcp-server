@@ -23,14 +23,16 @@ jobs:
               - 'cli/**'
             intellij:
               - 'intellij/**'
+      - name: Generate Gradle Wrapper
+        run: gradle wrapper --gradle-version 9.0-rc-2 --distribution-type all --console=plain
       - name: Spotless Check
-        run: gradle spotlessCheck
+        run: ./gradlew spotlessCheck
       - name: Core Tests
         if: steps.changes.outputs.core == 'true'
-        run: gradle :core:test
+        run: ./gradlew :core:test
       - name: CLI Tests
         if: steps.changes.outputs.cli == 'true'
-        run: gradle :cli:test
+        run: ./gradlew :cli:test
       - name: IntelliJ Plugin Build
         if: steps.changes.outputs.intellij == 'true'
-        run: gradle :intellij:buildPlugin
+        run: ./gradlew :intellij:buildPlugin
