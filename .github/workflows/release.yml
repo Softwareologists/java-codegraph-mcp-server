@@ -1,9 +1,6 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
   release:
     types: [published, created]
 
@@ -50,4 +47,3 @@ jobs:
             cli/build/libs/cli-all.jar
             intellij/build/distributions/*.zip
           draft: false
-          allow_updates: true
