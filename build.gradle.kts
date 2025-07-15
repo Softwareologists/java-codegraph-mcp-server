@@ -1,6 +1,6 @@
 plugins {
     `java-library`
-    id("com.diffplug.spotless") version "6.25.0"
+    id("com.diffplug.spotless") version "7.1.0"
 }
 
 subprojects {

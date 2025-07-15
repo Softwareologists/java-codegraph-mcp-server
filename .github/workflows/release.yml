@@ -19,7 +19,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - name: Generate Gradle Wrapper
-        run: gradle wrapper --gradle-version 8.5 --distribution-type all --console=plain
+        run: gradle wrapper --gradle-version 9.0-rc-2 --distribution-type all --console=plain
       - name: Build Artifacts
         run: ./gradlew :cli:shadowJar :intellij:buildPlugin --no-daemon --console=plain
       - name: Detect Tag
