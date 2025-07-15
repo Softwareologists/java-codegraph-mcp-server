@@ -8,7 +8,7 @@ This document describes how to build and install the CodeGraph MCP plugin into I
    ```bash
    gradle :intellij:buildPlugin
    ```
-   The distribution ZIP will be created in `intellij/build/distributions/CodeGraphMcp-0.1.0.zip`.
+   The distribution ZIP will be created in `intellij/build/distributions/CodeGraphMcp-1.0.1.zip`.
 
 2. **Install in IntelliJ**
 

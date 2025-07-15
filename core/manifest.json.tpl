@@ -1,6 +1,6 @@
 {
   "name": "CodeGraph MCP",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "capabilities": [
     { "name": "findCallers", "params": ["className"], "defaults": {"limit": 100, "page": 1, "pageSize": 50} },
     { "name": "findImplementations", "params": ["interfaceName"], "defaults": {"limit": 100, "page": 1, "pageSize": 50} },
