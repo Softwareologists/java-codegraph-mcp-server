@@ -21,6 +21,8 @@ jobs:
           fi
       - name: Generate Plugin Changelog
         run: ./scripts/generate-intellij-changelog.sh "${{ steps.tag.outputs.tag_name }}"
+      - name: Update Version Files
+        run: ./scripts/update-version.sh "${{ steps.tag.outputs.tag_name }}"
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
