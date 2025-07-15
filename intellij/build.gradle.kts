@@ -31,3 +31,12 @@ dependencies {
     implementation("org.json:json:20240303")
     testImplementation(project(":core"))
 }
+
+tasks {
+    patchPluginXml {
+        changeNotes.set(provider {
+            val f = file("CHANGELOG.md")
+            if (f.exists()) f.readText() else ""
+        })
+    }
+}

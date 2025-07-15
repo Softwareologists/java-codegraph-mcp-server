@@ -21,3 +21,4 @@ gradle/wrapper/
 gradlew
 gradlew.bat
 examples/example.jar
+intellij/CHANGELOG.md

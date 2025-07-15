@@ -11,14 +11,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-      - name: Generate Gradle Wrapper
-        run: gradle wrapper --gradle-version 8.5 --distribution-type all --console=plain
-      - name: Build Artifacts
-        run: ./gradlew :cli:shadowJar :intellij:buildPlugin --no-daemon --console=plain
       - name: Detect Tag
         id: tag
         run: |
@@ -27,6 +19,16 @@ jobs:
           else
             echo "tag_name=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
           fi
+      - name: Generate Plugin Changelog
+        run: ./scripts/generate-intellij-changelog.sh "${{ steps.tag.outputs.tag_name }}"
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Generate Gradle Wrapper
+        run: gradle wrapper --gradle-version 8.5 --distribution-type all --console=plain
+      - name: Build Artifacts
+        run: ./gradlew :cli:shadowJar :intellij:buildPlugin --no-daemon --console=plain
       - name: Pre-release Check
         id: pre
         run: |
