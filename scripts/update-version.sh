@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
-NEW_VERSION="$1"
+# Remove leading 'v' if present so tags like v1.0.3 become 1.0.3
+NEW_VERSION="${1#v}"
 
 # Update ManifestGenerator.java
 sed -i "s/1\.0\.1/${NEW_VERSION}/" core/src/main/java/tech/softwareologists/core/ManifestGenerator.java
