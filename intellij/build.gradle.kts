@@ -28,8 +28,16 @@ sourceSets {
 
 dependencies {
     implementation(project(":core"))
+    implementation("org.neo4j.test:neo4j-harness:5.19.0") {
+        exclude(group = "org.neo4j", module = "arrow-bom")
+    }
+    runtimeOnly("net.java.dev.jna:jna:5.14.0")
     implementation("org.json:json:20240303")
     testImplementation(project(":core"))
+}
+
+configurations.all {
+    exclude(group = "org.neo4j", module = "arrow-bom")
 }
 
 tasks {
