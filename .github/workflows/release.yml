@@ -21,6 +21,13 @@ jobs:
           fi
       - name: Generate Plugin Changelog
         run: ./scripts/generate-intellij-changelog.sh "${{ steps.tag.outputs.tag_name }}"
+      - name: Update Version Files
+        run: |
+          ./scripts/update-version.sh "${{ steps.tag.outputs.tag_name }}"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git commit -am "chore: bump version to ${{ steps.tag.outputs.tag_name }}"
+          git push
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
