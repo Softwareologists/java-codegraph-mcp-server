@@ -28,8 +28,13 @@ sourceSets {
 
 dependencies {
     implementation(project(":core"))
+    runtimeOnly("net.java.dev.jna:jna:5.14.0")
     implementation("org.json:json:20240303")
     testImplementation(project(":core"))
+}
+
+configurations.all {
+    exclude(group = "org.neo4j", module = "arrow-bom")
 }
 
 tasks {
